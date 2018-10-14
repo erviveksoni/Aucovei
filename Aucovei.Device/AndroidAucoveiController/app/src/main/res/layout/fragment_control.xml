@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="fill"
+    tools:context=".ControlFragment">
+
+
+    <WebView
+        android:id="@+id/feedview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="fill"
+        android:visibility="invisible">
+    </WebView>
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        android:visibility="gone"/>
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="240dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true">
+
+        <ImageButton
+            android:id="@+id/right_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="50px"
+            android:layout_marginBottom="150px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_right"
+            android:text="Right" />
+
+        <ImageButton
+            android:id="@+id/left_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="345px"
+            android:layout_marginBottom="150px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_left" />
+
+        <ImageButton
+            android:id="@+id/stop_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="200px"
+            android:layout_marginBottom="150px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_stop" />
+
+        <ImageButton
+            android:id="@+id/fwd_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="200px"
+            android:layout_marginBottom="300px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_top" />
+
+        <ImageButton
+            android:id="@+id/rev_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginRight="200px"
+            android:layout_marginBottom="5px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_down" />
+
+        <ImageButton
+            android:id="@+id/disconnect_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="770px"
+            android:layout_marginBottom="10px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_disconnect" />
+
+        <ImageButton
+            android:id="@+id/camera_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="1000px"
+            android:layout_marginBottom="10px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_cameraon" />
+
+        <ImageButton
+            android:id="@+id/titlright_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="350px"
+            android:layout_marginBottom="150px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_tiltright"
+            android:text="Right" />
+
+        <ImageButton
+            android:id="@+id/tiltleft_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="45px"
+            android:layout_marginBottom="150px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_tiltleft" />
+
+        <ImageButton
+            android:id="@+id/tiltup_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="200px"
+            android:layout_marginBottom="300px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_tiltup" />
+
+        <ImageButton
+            android:id="@+id/tiltdown_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="200px"
+            android:layout_marginBottom="5px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_tiltdown" />
+
+        <ImageButton
+            android:id="@+id/center_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginLeft="200px"
+            android:layout_marginBottom="150px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_center" />
+
+        android:layout_width="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_height="100dp">
+
+        <ImageButton
+        android:id="@+id/btn_horn"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="50px"
+        android:layout_marginTop="80px"
+        android:background="@null"
+        android:contentDescription="sdsd"
+        android:src="@drawable/imgbtn_horn" />
+
+        <ImageButton
+            android:id="@+id/btn_auto"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginRight="50px"
+            android:layout_marginTop="80px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_autoon" />
+
+    </RelativeLayout>
+</RelativeLayout>
