@@ -106,8 +106,12 @@ namespace Aucovei.Device
                 {
                     throw new IOException("GPIO interface not found");
                 }
-              
-                this.playbackService.PlaySoundFromFile(PlaybackService.SoundFiles.BootUp, true);
+
+                this.cameraLedPin = this.gpio.OpenPin(LedPin);
+                this.cameraLedPin.Write(GpioPinValue.Low);
+                this.cameraLedPin.SetDriveMode(GpioPinDriveMode.Output);
+
+                await this.playbackService.SynthesizeTextAsync("Initializing system");
                 this.displayManager = new DisplayManager();
                 await this.displayManager.Init();
                 this.displayManager.AppendImage(DisplayImages.Logo_24_32, 48, 1);
@@ -145,6 +149,8 @@ namespace Aucovei.Device
                 this.DisplayNetworkInfo();
 
                 this.displayManager.AppendImage(DisplayImages.BluetoothDisconnected, 0, 1);
+
+                await this.playbackService.SynthesizeTextAsync("Initialization complete");
             }
             catch (Exception ex)
             {
@@ -155,10 +161,6 @@ namespace Aucovei.Device
                 this.displayManager.ClearDisplay();
                 this.displayManager.AppendImage(DisplayImages.Error, 0, 0);
                 this.displayManager.AppendText("Initialization error!", 15, 0);
-            }
-            finally
-            {
-                this.playbackService.StopSoundPlay();
             }
         }
 
@@ -653,7 +655,7 @@ namespace Aucovei.Device
                 case Commands.DriveAutoModeOn:
                     {
                         await this.playbackService.SynthesizeTextAsync("Autonomous mode on!");
-
+                        await Task.Delay(2000);
                         var result = Encoding.Unicode.GetBytes(Commands.DriveForwardValue);
                         this.arduino.Write(result);
                         await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,

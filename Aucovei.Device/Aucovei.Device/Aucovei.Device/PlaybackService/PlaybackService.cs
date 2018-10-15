@@ -32,7 +32,7 @@ namespace Aucovei.Device.Services
         {
             // Create the player instance
             this.player = new MediaPlayer { AutoPlay = false };
-            this.player.Volume = 1.0;
+            this.player.Volume = 0.5;
 
             this.synthesizer = new SpeechSynthesizer();
             this.speechContext = ResourceContext.GetForCurrentView();
@@ -76,6 +76,7 @@ namespace Aucovei.Device.Services
         public async Task SynthesizeTextAsync(string text)
         {
             // Create a stream from the text. This will be played using a media element.
+            this.currentSource = SoundFiles.Default;
             var audio = await this.synthesizer.SynthesizeTextToStreamAsync(text);
             this.player.Source = MediaSource.CreateFromStream(audio, audio.ContentType);
             this.player.Play();
