@@ -2,16 +2,22 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using Aucovei.Device.Configuration;
+using Aucovei.Device.Devices;
+using Aucovei.Device.Services;
+using Aucovei.Device.Web;
 using Microsoft.IoT.Lightning.Providers;
 using UnitsNet;
 using Windows.Devices;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Rfcomm;
 using Windows.Devices.Enumeration;
+using Windows.Devices.Gpio;
 using Windows.Devices.I2c;
 using Windows.Networking.Connectivity;
 using Windows.Networking.Sockets;
@@ -21,10 +27,6 @@ using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
-using Aucovei.Device.Configuration;
-using Aucovei.Device.Devices;
-using Aucovei.Device.Services;
-using Aucovei.Device.Web;
 using UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -38,6 +40,7 @@ namespace Aucovei.Device
     {
         private const int SLAVEADDRESS = 0x40;
         private const int TriggerPin = 16;
+        private const int LedPin = 26;
         private const int EchoPin = 12;
         private I2cDevice arduino; // Used to Connect to Arduino
         private DisplayManager displayManager;
@@ -57,6 +60,8 @@ namespace Aucovei.Device
         private DataWriter writer;
         private double speedInmPerSecond = 0;
         private PlaybackService playbackService;
+        private GpioController gpio;
+        private GpioPin cameraLedPin;
 
 
         public MainPage()
@@ -66,11 +71,6 @@ namespace Aucovei.Device
 
         public async void InitializeSystem()
         {
-            /*
-                var hasGpio = GpioController.GetDefault() != null;
-                if (hasGpio)
-                {
-                } */
             try
             {
                 this.InitializeComponent();
@@ -101,6 +101,12 @@ namespace Aucovei.Device
         {
             try
             {
+                this.gpio = await GpioController.GetDefaultAsync();
+                if (this.gpio == null)
+                {
+                    throw new IOException("GPIO interface not found");
+                }
+              
                 this.playbackService.PlaySoundFromFile(PlaybackService.SoundFiles.BootUp, true);
                 this.displayManager = new DisplayManager();
                 await this.displayManager.Init();
@@ -176,6 +182,7 @@ namespace Aucovei.Device
             /* Cleanup */
             this.arduino?.Dispose();
             this.displayManager?.Dispose();
+            this.cameraLedPin?.Dispose();
         }
 
         private async Task InitializeArduinoSlave()
@@ -645,6 +652,8 @@ namespace Aucovei.Device
                     }
                 case Commands.DriveAutoModeOn:
                     {
+                        await this.playbackService.SynthesizeTextAsync("Autonomous mode on!");
+
                         var result = Encoding.Unicode.GetBytes(Commands.DriveForwardValue);
                         this.arduino.Write(result);
                         await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
@@ -655,6 +664,7 @@ namespace Aucovei.Device
                     }
                 case Commands.DriveAutoModeOff:
                     {
+                        await this.playbackService.SynthesizeTextAsync("Autonomous mode off!");
                         await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                             () => { this.ultrasonictimer.Stop(); });
                         this.DisplayNetworkInfo();
@@ -731,6 +741,18 @@ namespace Aucovei.Device
                 case Commands.Horn:
                     {
                         this.playbackService.PlaySoundFromFile(PlaybackService.SoundFiles.Horn);
+
+                        break;
+                    }
+                case Commands.CameraLedOn:
+                    {
+                        this.cameraLedPin.Write(GpioPinValue.High);
+
+                        break;
+                    }
+                case Commands.CameraLedOff:
+                    {
+                        this.cameraLedPin.Write(GpioPinValue.Low);
 
                         break;
                     }

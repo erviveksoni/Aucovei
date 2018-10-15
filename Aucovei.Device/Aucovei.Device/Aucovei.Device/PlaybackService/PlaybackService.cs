@@ -32,7 +32,7 @@ namespace Aucovei.Device.Services
         {
             // Create the player instance
             this.player = new MediaPlayer { AutoPlay = false };
-            this.player.Volume = 0.5;
+            this.player.Volume = 1.0;
 
             this.synthesizer = new SpeechSynthesizer();
             this.speechContext = ResourceContext.GetForCurrentView();

@@ -49,6 +49,10 @@
 
         public const string Horn = "HORN";
 
+        public const string CameraLedOn = "CAMERA-LED-ON";
+
+        public const string CameraLedOff = "CAMERA-LED-OFF";
+
         public const string SpeedSlow = "SPEEDSLOW";
         public const string SpeedSlowValue = "100";
 

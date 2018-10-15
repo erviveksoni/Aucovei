@@ -26,7 +26,7 @@
 
     <RelativeLayout
         android:layout_width="wrap_content"
-        android:layout_height="240dp"
+        android:layout_height="280dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true">
 
@@ -185,10 +185,22 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:layout_marginLeft="50px"
-        android:layout_marginTop="80px"
+        android:layout_marginTop="160px"
         android:background="@null"
         android:contentDescription="sdsd"
         android:src="@drawable/imgbtn_horn" />
+
+        <ImageButton
+            android:id="@+id/btn_camlighton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="50px"
+            android:layout_marginTop="0px"
+            android:background="@null"
+            android:contentDescription="sdsd"
+            android:src="@drawable/imgbtn_camlighton" />
 
         <ImageButton
             android:id="@+id/btn_auto"
@@ -197,7 +209,7 @@
             android:layout_alignParentRight="true"
             android:layout_alignParentTop="true"
             android:layout_marginRight="50px"
-            android:layout_marginTop="80px"
+            android:layout_marginTop="160px"
             android:background="@null"
             android:contentDescription="sdsd"
             android:src="@drawable/imgbtn_autoon" />

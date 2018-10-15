@@ -26,14 +26,14 @@ public class ControlFragment extends Fragment {
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     ImageButton forward_btn, forward_left_btn, stop_btn, forward_right_btn, reverse_btn, disconnect_btn;
     ImageButton tiltup_btn, tiltdown_btn, tiltright_btn, tiltleft_btn, center_btn;
-    ImageButton camera_btn, horn_btn, automode_btn;
+    ImageButton camera_btn, horn_btn, automode_btn, cameralight_btn;
 
     String command; //string variable that will store value to be transmitted to the bluetooth module
     public String hostIpAddress;
     private WebView mWebView = null;
     AsyncTaskRunner asyncTaskRunner;
     ProgressBar progressBar;
-    private boolean iscamon, isAutoMode = false;
+    private boolean iscamon, isAutoMode, isCamLightOn = false;
 
     //private OnFragmentInteractionListener mListener;
 
@@ -72,6 +72,7 @@ public class ControlFragment extends Fragment {
         camera_btn = (ImageButton) rootView.findViewById(R.id.camera_btn);
         horn_btn = (ImageButton) rootView.findViewById(R.id.btn_horn);
         automode_btn = (ImageButton) rootView.findViewById(R.id.btn_auto);
+        cameralight_btn= (ImageButton) rootView.findViewById(R.id.btn_camlighton);
 
         tiltdown_btn = (ImageButton) rootView.findViewById(R.id.tiltdown_btn);
         tiltleft_btn = (ImageButton) rootView.findViewById(R.id.tiltleft_btn);
@@ -260,6 +261,22 @@ public class ControlFragment extends Fragment {
                 }
                 sendCommand(command);
                 setDriveButtonsActivity();
+            }
+        });
+
+        cameralight_btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!isCamLightOn) {
+                    command = "CAMERA-LED-ON";
+                    isCamLightOn = true;
+                    cameralight_btn.setImageResource(R.drawable.imgbtn_camlightoff);
+                } else {
+                    command = "CAMERA-LED-OFF";
+                    isCamLightOn = false;
+                    cameralight_btn.setImageResource(R.drawable.imgbtn_camlighton);
+                }
+                sendCommand(command);
             }
         });
 
