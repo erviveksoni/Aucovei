@@ -1,1 +1,1 @@
-C:\Code\ArduinoWire\ArduinoWire\Aucovei.Device.csproj;arm
+C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Aucovei.Device.csproj;arm

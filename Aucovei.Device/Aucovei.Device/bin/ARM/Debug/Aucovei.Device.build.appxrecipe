@@ -10,22 +10,22 @@
     <PackageArchitecture>arm</PackageArchitecture>
     <PackageIdentityName>85daabc2-0aa2-4e48-9ba9-3291088554c0</PackageIdentityName>
     <PackageIdentityPublisher>CN=viveksni</PackageIdentityPublisher>
-    <IntermediateOutputPath>C:\Code\ArduinoWire\ArduinoWire\obj\ARM\Debug\</IntermediateOutputPath>
+    <IntermediateOutputPath>C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\obj\ARM\Debug\</IntermediateOutputPath>
     <RemoteDeploymentType></RemoteDeploymentType>
     <PackageRegistrationPath></PackageRegistrationPath>
     <RemoveNonLayoutFiles>true</RemoveNonLayoutFiles>
     <DeployOptionalPackages>false</DeployOptionalPackages>
     <WindowsSdkPath>C:\Program Files %28x86%29\Windows Kits\10\</WindowsSdkPath>
-    <LayoutDir>C:\Code\ArduinoWire\ArduinoWire\bin\ARM\Debug\AppX</LayoutDir>
+    <LayoutDir>C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\bin\ARM\Debug\AppX</LayoutDir>
   </PropertyGroup>
   <ItemGroup>
-    <AppXManifest Include="C:\Code\ArduinoWire\ArduinoWire\bin\ARM\Debug\Core\AppxManifest.xml">
+    <AppXManifest Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\bin\ARM\Debug\Core\AppxManifest.xml">
       <PackagePath>AppxManifest.xml</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
     </AppXManifest>
   </ItemGroup>
   <ItemGroup>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\bin\ARM\Debug\Aucovei.Device.exe">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\bin\ARM\Debug\Aucovei.Device.exe">
       <PackagePath>entrypoint\Aucovei.Device.exe</PackagePath>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\viveksni\.nuget\packages\microsoft.csharp\4.0.1\lib\netcore50\Microsoft.CSharp.dll">
@@ -394,86 +394,86 @@
     <AppxPackagedFile Include="C:\Users\viveksni\.nuget\packages\win2d.uwp\1.23.0\lib\uap10.0\Microsoft.Graphics.Canvas.winmd">
       <PackagePath>Microsoft.Graphics.Canvas.winmd</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\BadgeLogo.scale-400.png">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\BadgeLogo.scale-400.png">
       <PackagePath>Assets\BadgeLogo.scale-400.png</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\LockScreenLogo.scale-200.png">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\LockScreenLogo.scale-200.png">
       <PackagePath>Assets\LockScreenLogo.scale-200.png</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\SplashScreen.scale-200.png">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\SplashScreen.scale-200.png">
       <PackagePath>Assets\SplashScreen.scale-200.png</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\Square150x150Logo.scale-200.png">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\Square150x150Logo.scale-200.png">
       <PackagePath>Assets\Square150x150Logo.scale-200.png</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\Square44x44Logo.scale-200.png">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\Square44x44Logo.scale-200.png">
       <PackagePath>Assets\Square44x44Logo.scale-200.png</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
       <PackagePath>Assets\Square44x44Logo.targetsize-24_altform-unplated.png</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\StoreLogo.png">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\StoreLogo.png">
       <PackagePath>Assets\StoreLogo.png</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\Wide310x150Logo.scale-200.png">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\Wide310x150Logo.scale-200.png">
       <PackagePath>Assets\Wide310x150Logo.scale-200.png</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\Disconnected.mp3">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\Disconnected.mp3">
       <PackagePath>Assets\Disconnected.mp3</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\Default.mp3">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\Default.mp3">
       <PackagePath>Assets\Default.mp3</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\BootUp.mp3">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\BootUp.mp3">
       <PackagePath>Assets\BootUp.mp3</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\BootUp_fast.mp3">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\BootUp_fast.mp3">
       <PackagePath>Assets\BootUp_fast.mp3</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\CensorBeep.mp3">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\CensorBeep.mp3">
       <PackagePath>Assets\CensorBeep.mp3</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Assets\Horn.mp3">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Assets\Horn.mp3">
       <PackagePath>Assets\Horn.mp3</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Properties\Default.rd.xml">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Properties\Default.rd.xml">
       <PackagePath>Properties\Default.rd.xml</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Web\Html\Index.html">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Web\Html\Index.html">
       <PackagePath>Web\Html\Index.html</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Web\JavaScript\Camera.js">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Web\JavaScript\Camera.js">
       <PackagePath>Web\JavaScript\Camera.js</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Web\JavaScript\Controls.js">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Web\JavaScript\Controls.js">
       <PackagePath>Web\JavaScript\Controls.js</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Web\JavaScript\Fullscreen.js">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Web\JavaScript\Fullscreen.js">
       <PackagePath>Web\JavaScript\Fullscreen.js</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Web\JavaScript\VideoSetting.js">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Web\JavaScript\VideoSetting.js">
       <PackagePath>Web\JavaScript\VideoSetting.js</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Web\JavaScript\WebSocketHelper.js">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Web\JavaScript\WebSocketHelper.js">
       <PackagePath>Web\JavaScript\WebSocketHelper.js</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\Web\Styles\Index.css">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\Web\Styles\Index.css">
       <PackagePath>Web\Styles\Index.css</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\bin\ARM\Debug\Aucovei.Device.xr.xml">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\bin\ARM\Debug\Aucovei.Device.xr.xml">
       <PackagePath>Aucovei.Device.xr.xml</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\bin\ARM\Debug\App.xbf">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\bin\ARM\Debug\App.xbf">
       <PackagePath>App.xbf</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\bin\ARM\Debug\MainPage.xbf">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\bin\ARM\Debug\MainPage.xbf">
       <PackagePath>MainPage.xbf</PackagePath>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Program Files %28x86%29\Windows Kits\10\UnionMetadata\10.0.17134.0\Windows.winmd">
@@ -488,11 +488,11 @@
     <AppxPackagedFile Include="C:\Users\viveksni\.nuget\packages\microsoft.iot.devicehelpers\1.0.8\lib\uap10.0\Microsoft.IoT.DeviceHelpers\Properties\Microsoft.IoT.DeviceHelpers.rd.xml">
       <PackagePath>Microsoft.IoT.DeviceHelpers\Properties\Microsoft.IoT.DeviceHelpers.rd.xml</PackagePath>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\bin\ARM\Debug\resources.pri">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\bin\ARM\Debug\resources.pri">
       <PackagePath>resources.pri</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
     </AppxPackagedFile>
-    <AppxPackagedFile Include="C:\Code\ArduinoWire\ArduinoWire\bin\ARM\Debug\Core\Aucovei.Device.exe">
+    <AppxPackagedFile Include="C:\Code\Aucovei\Aucovei.Device\Aucovei.Device\bin\ARM\Debug\Core\Aucovei.Device.exe">
       <PackagePath>Aucovei.Device.exe</PackagePath>
     </AppxPackagedFile>
   </ItemGroup>
