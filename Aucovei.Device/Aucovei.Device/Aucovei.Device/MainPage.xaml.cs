@@ -457,6 +457,13 @@ namespace Aucovei.Device
         {
             Debug.WriteLine("Connection received");
 
+            if (this.isVoiceModeActive)
+            {
+                Debug.Write("Voice Mode Active!");
+                this.SendMessage("Disconnecting device. Aucovei voice mode active.");
+                return;
+            }
+
             try
             {
                 this.socket = args.Socket;
@@ -986,6 +993,14 @@ namespace Aucovei.Device
                         {
                             response = response + toggleCommandState.ToString().ToLowerInvariant() + "...";
                             this.isVoiceModeActive = toggleCommandState == Commands.ToggleCommandState.On;
+                            if (this.isVoiceModeActive)
+                            {
+                                await this.ExecuteCommandAsync(Commands.SpeedSlow);
+                            }
+                            else if (this.isVoiceModeActive)
+                            {
+                                await this.ExecuteCommandAsync(Commands.SpeedNormal);
+                            }
 
                             this.Speak(response);
                             this.WriteToCommandTextBlock(response, "🗣", 1);
@@ -1035,7 +1050,7 @@ namespace Aucovei.Device
                             response = "Voice mode not active!";
                             response = response + "...";
                             this.Speak(response);
-                            this.WriteToCommandTextBlock(response, "❗️", 3);
+                            this.WriteToCommandTextBlock(response, "❗️");
 
                             break;
                         }
@@ -1045,6 +1060,7 @@ namespace Aucovei.Device
                         {
                             response = response + drivingDirection.ToString().ToLowerInvariant() + "...";
                             this.Speak(response);
+                            await this.ExecuteCommandAsync(this.MapDirectionToCommand(drivingDirection));
                             this.WriteToCommandTextBlock(response, "🏃‍", 1);
                         }
 
@@ -1075,6 +1091,22 @@ namespace Aucovei.Device
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.ToString());
+            }
+        }
+
+        private string MapDirectionToCommand(Commands.DrivingDirection drivingDirection)
+        {
+            switch (drivingDirection)
+            {
+                default:
+                case Commands.DrivingDirection.Forward:
+                    return Commands.DriveForward;
+                case Commands.DrivingDirection.Reverse:
+                    return Commands.DriveReverse;
+                case Commands.DrivingDirection.Left:
+                    return Commands.DriveLeft;
+                case Commands.DrivingDirection.Right:
+                    return Commands.DriveRight;
             }
         }
 
