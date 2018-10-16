@@ -58,5 +58,19 @@
 
         public const string SpeedNormal = "SPEEDNORMAL";
         public const string SpeedNormalValue = "160";
+
+        public enum ToggleCommandState
+        {
+            On,
+            Off
+        }
+
+        public enum DrivingDirection
+        {
+            Forward,
+            Reverse,
+            Left,
+            Right
+        }
     }
 }

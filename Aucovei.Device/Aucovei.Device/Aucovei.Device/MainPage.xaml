@@ -11,9 +11,17 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-        <Button Content="Clear Text" Width="200" Height="100" HorizontalAlignment="Center" Tapped="Clear_OnTapped" VerticalAlignment="Bottom" x:Name="Clear" Click="Clear_OnClick" Margin="10,10,0,0" FontWeight="Bold" FontSize="36"></Button>
-        <ScrollViewer VerticalScrollBarVisibility="Visible" Width="auto" Height="800" VerticalAlignment="Top">
-            <TextBlock x:Name="Console" VerticalAlignment="Top" Height="800"></TextBlock>
-        </ScrollViewer>
+        <Grid x:Name="controllerGrid">
+            <ScrollViewer Grid.Row="0" Name="scrollViewer" Padding="10" Background="Black">
+                <TextBlock x:Name="Console" Foreground="White" FontSize="20" FontWeight="Light" Text="Output Text" TextWrapping="WrapWholeWords"/>
+            </ScrollViewer>
+        </Grid>
+        <Grid x:Name="voiceCommandGrid" Visibility="Collapsed" Background="Black">
+            <Button x:Name="closeVoiceCommandButton" HorizontalAlignment="Right" VerticalAlignment="Top" Content="❌" Background="Transparent" Click="closeVoiceCommandButton_Click" FontSize="60" Margin="10"/>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock x:Name="emojiTextBlock" Text="😃" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Light" FontSize="72"/>
+                <TextBlock x:Name="voiceCommandTextBlock" Foreground="White" Text="Getting ready..." HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Light" FontSize="48"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Page>
