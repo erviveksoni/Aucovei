@@ -72,5 +72,14 @@
             Left,
             Right
         }
+
+        public enum CameraDirection
+        {
+            Up,
+            Down,
+            Left,
+            Right,
+            Center
+        }
     }
 }

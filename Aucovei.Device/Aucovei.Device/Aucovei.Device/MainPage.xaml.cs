@@ -943,6 +943,8 @@ namespace Aucovei.Device
             string response = "Sorry, I didn't get that.";
             Commands.ToggleCommandState toggleCommandState;
             Commands.DrivingDirection drivingDirection;
+            Commands.CameraDirection camerairection;
+
 
             try
             {
@@ -1043,6 +1045,18 @@ namespace Aucovei.Device
                             this.WriteToCommandTextBlock(response, "💡", 1);
                         }
                         break;
+                    case VoiceCommandType.Tilt:
+                    case VoiceCommandType.Pan:
+                        response = "Moving camera ";
+                        if (Enum.TryParse(voiceCommand.Data, true, out camerairection))
+                        {
+                            response = response + camerairection.ToString().ToLowerInvariant() + "...";
+                            this.Speak(response);
+                            await this.ExecuteCommandAsync(this.MapCameraDirectionToCommand(camerairection));
+                            this.WriteToCommandTextBlock(response, "📸", 1);
+                        }
+
+                        break;
                     case VoiceCommandType.Move:
                     case VoiceCommandType.Turn:
                         if (!this.isVoiceModeActive)
@@ -1060,7 +1074,7 @@ namespace Aucovei.Device
                         {
                             response = response + drivingDirection.ToString().ToLowerInvariant() + "...";
                             this.Speak(response);
-                            await this.ExecuteCommandAsync(this.MapDirectionToCommand(drivingDirection));
+                            await this.ExecuteCommandAsync(this.MapDrivingDirectionToCommand(drivingDirection));
                             this.WriteToCommandTextBlock(response, "🏃‍", 1);
                         }
 
@@ -1094,7 +1108,7 @@ namespace Aucovei.Device
             }
         }
 
-        private string MapDirectionToCommand(Commands.DrivingDirection drivingDirection)
+        private string MapDrivingDirectionToCommand(Commands.DrivingDirection drivingDirection)
         {
             switch (drivingDirection)
             {
@@ -1107,6 +1121,24 @@ namespace Aucovei.Device
                     return Commands.DriveLeft;
                 case Commands.DrivingDirection.Right:
                     return Commands.DriveRight;
+            }
+        }
+
+        private string MapCameraDirectionToCommand(Commands.CameraDirection cameraDirection)
+        {
+            switch (cameraDirection)
+            {
+                default:
+                case Commands.CameraDirection.Center:
+                    return Commands.PanTiltCenter;
+                case Commands.CameraDirection.Up:
+                    return Commands.TiltUp;
+                case Commands.CameraDirection.Down:
+                    return Commands.TiltDown;
+                case Commands.CameraDirection.Left:
+                    return Commands.PanLeft;
+                case Commands.CameraDirection.Right:
+                    return Commands.PanRight;
             }
         }
 

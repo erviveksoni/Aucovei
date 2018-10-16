@@ -31,7 +31,9 @@ namespace Aucovei.Device.Services
         VoiceMode,
         Camera,
         Lights,
-        AutoDrive
+        AutoDrive,
+        Tilt,
+        Pan
     }
 
     public struct VoiceCommand
@@ -335,6 +337,10 @@ namespace Aucovei.Device.Services
                 else if (spr.Contains("lights"))
                 {
                     return VoiceCommandType.Lights;
+                }
+                else if (spr.Contains("look"))
+                {
+                    return VoiceCommandType.Pan;
                 }
                 else if (spr.Contains("camera"))
                 {
