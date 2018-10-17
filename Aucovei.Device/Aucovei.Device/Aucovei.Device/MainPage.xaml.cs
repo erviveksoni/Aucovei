@@ -90,6 +90,7 @@ namespace Aucovei.Device
             {
                 this.isSystemInitialized = false;
 
+                this.WriteToOutputTextBlock("Error: " + ex.Message);
                 var msg = new MessageDialog(ex.Message);
                 await msg.ShowAsync(); // this will show error message(if Any)
             }
@@ -97,6 +98,8 @@ namespace Aucovei.Device
 
         private void InitializeVoiceCommands()
         {
+            this.WriteToOutputTextBlock("Initializing system...");
+
             this.voiceCommandHideTimer = new DispatcherTimer();
             this.voiceCommandHideTimer.Interval = TimeSpan.FromSeconds(5);
             this.voiceCommandHideTimer.Tick += this.VoiceCommandHideTimer_Tick;
@@ -118,7 +121,11 @@ namespace Aucovei.Device
                 }
 
                 this.SetControlModeonUi(null, null);
+
+                this.WriteToOutputTextBlock("Setting up distance sensor...");
                 this.ultrasonicsensor = new HCSR04(Constants.TriggerPin, Constants.EchoPin, 1);
+
+                this.WriteToOutputTextBlock("Setting up camera...");
                 this.cameraLedPin = this.gpio.OpenPin(Constants.LedPin);
                 this.cameraLedPin.Write(GpioPinValue.Low);
                 this.cameraLedPin.SetDriveMode(GpioPinDriveMode.Output);
@@ -132,14 +139,19 @@ namespace Aucovei.Device
 
                 this.displayManager.AppendText("Initializing system...", 0, 0);
                 this.displayManager.AppendText(">Connecting slave...", 5, 1);
+
                 await this.InitializeI2CSlaveAsync();
                 while (!this.isArduinoSlaveSetup)
                 {
+                    this.WriteToOutputTextBlock("Searching I2C device...");
                     this.displayManager.AppendText(">Searching...", 10, 2);
                     await Task.Delay(2000);
                 }
 
+                this.WriteToOutputTextBlock("Connected to I2C device...");
                 this.displayManager.AppendText(">>Done...", 10, 2);
+
+                this.WriteToOutputTextBlock("Initializing Rfcomm Service...");
                 this.displayManager.AppendText(">Starting Rfcomm Svc...", 5, 3);
 
                 this.InitializeRfcommServer();
@@ -151,7 +163,11 @@ namespace Aucovei.Device
                 this.displayManager.AppendText(">Started Rfcomm Svc...", 5, 3);
 
                 await this.panTiltServo.Center();
+
+                this.WriteToOutputTextBlock("Initializing video Service...");
                 await this.InitializeVideoService();
+
+                this.WriteToOutputTextBlock("Initializing voice commands...");
                 this.voiceController.Initialize();
 
                 this.displayManager.ClearDisplay();
@@ -163,10 +179,12 @@ namespace Aucovei.Device
 
                 this.displayManager.AppendImage(DisplayImages.BluetoothDisconnected, 0, 1);
 
+                this.WriteToOutputTextBlock("Initialization complete...");
                 this.Speak("Initialization complete");
             }
             catch (Exception ex)
             {
+                this.WriteToOutputTextBlock("Error: " + ex.Message);
                 this.isSystemInitialized = false;
 
                 var msg = new MessageDialog(ex.Message);
@@ -179,6 +197,7 @@ namespace Aucovei.Device
 
         private async Task InitializeI2CSlaveAsync()
         {
+            this.WriteToOutputTextBlock("Initializing I2C Slave...");
             var settings = new I2cConnectionSettings(Constants.SLAVEADDRESS); // Slave Address of Arduino Uno 
             settings.BusSpeed = I2cBusSpeed.FastMode; // this bus has 400Khz speed
                                                       //var controller = await I2cController.GetDefaultAsync();
@@ -792,7 +811,7 @@ namespace Aucovei.Device
             var task = this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                  () =>
                  {
-                     var speedString = string.Concat(this.speedInmPerSecond.ToString(CultureInfo.InvariantCulture), " m/s");
+                     var speedString = this.speedInmPerSecond.ToString(CultureInfo.InvariantCulture);
                      // this.displayManager.AppendText(speedString, 80, 3);
                      this.SpeedInfoValue.Text = speedString;
                  });
@@ -957,6 +976,8 @@ namespace Aucovei.Device
                             else
                             {
                                 await this.ExecuteCommandAsync(Commands.DriveAutoModeOff);
+                                this.displayManager.ClearRow(1);
+                                this.displayManager.ClearRow(3);
                             }
 
                             this.Speak(response);
@@ -982,10 +1003,8 @@ namespace Aucovei.Device
                                 // Stop vehicle and reset speed
                                 await this.ExecuteCommandAsync(Commands.DriveStop);
                                 await this.ExecuteCommandAsync(Commands.SpeedNormal);
-
                                 this.displayManager.ClearRow(1);
                                 this.displayManager.ClearRow(3);
-
                                 this.SetControlModeonUi(null, null);
                             }
 
