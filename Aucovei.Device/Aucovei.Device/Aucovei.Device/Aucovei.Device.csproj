@@ -111,6 +111,7 @@
     <Compile Include="Display\SSD1603\SSD1603Controller.cs" />
     <Compile Include="HCSR04.cs" />
     <Compile Include="Helper\DispatcherHelper.cs" />
+    <Compile Include="Helper\Helpers.cs" />
     <Compile Include="Helper\TaskHelper.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>

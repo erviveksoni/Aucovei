@@ -25,5 +25,12 @@ namespace Aucovei.Device
 
         // The value of the Service Name SDP attribute
         public const string SdpServiceName = "Bluetooth Rfcomm Chat Service";
+
+        public const string I2CControllerName = "I2C1";
+
+        public const int SLAVEADDRESS = 0x40;
+        public const int TriggerPin = 16;
+        public const int LedPin = 26;
+        public const int EchoPin = 12;
     }
 }

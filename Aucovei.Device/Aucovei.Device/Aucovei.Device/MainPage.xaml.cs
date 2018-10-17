@@ -1,25 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Aucovei.Device.Configuration;
 using Aucovei.Device.Devices;
 using Aucovei.Device.Services;
 using Aucovei.Device.Web;
-using Microsoft.IoT.Lightning.Providers;
 using UnitsNet;
-using Windows.Devices;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Rfcomm;
 using Windows.Devices.Enumeration;
 using Windows.Devices.Gpio;
 using Windows.Devices.I2c;
-using Windows.Networking.Connectivity;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 using Windows.UI.Core;
@@ -37,10 +31,6 @@ namespace Aucovei.Device
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private const int SLAVEADDRESS = 0x40;
-        private const int TriggerPin = 16;
-        private const int LedPin = 26;
-        private const int EchoPin = 12;
         private I2cDevice arduino; // Used to Connect to Arduino
         private DisplayManager displayManager;
         private int distanceCounter = 10;
@@ -66,7 +56,6 @@ namespace Aucovei.Device
         VoiceCommandController voiceController;
         DispatcherTimer voiceCommandHideTimer;
 
-
         public MainPage()
         {
             this.InitializeSystem();
@@ -77,15 +66,18 @@ namespace Aucovei.Device
             try
             {
                 this.InitializeComponent();
+
+                /*
                 if (LightningProvider.IsLightningEnabled)
                 {
                     LowLevelDevicesController.DefaultProvider = LightningProvider.GetAggregateProvider();
                 }
                 else
                 {
-                    //var msg = new MessageDialog("Error: Lightning not enabled");
-                    //await msg.ShowAsync();
+                    var msg = new MessageDialog("Error: Lightning not enabled");
+                    await msg.ShowAsync();
                 }
+                */
 
                 this.panTiltServo = new PanTiltServo();
 
@@ -124,8 +116,8 @@ namespace Aucovei.Device
                     throw new IOException("GPIO interface not found");
                 }
 
-                this.ultrasonicsensor = new HCSR04(TriggerPin, EchoPin, 1);
-                this.cameraLedPin = this.gpio.OpenPin(LedPin);
+                this.ultrasonicsensor = new HCSR04(Constants.TriggerPin, Constants.EchoPin, 1);
+                this.cameraLedPin = this.gpio.OpenPin(Constants.LedPin);
                 this.cameraLedPin.Write(GpioPinValue.Low);
                 this.cameraLedPin.SetDriveMode(GpioPinDriveMode.Output);
 
@@ -138,7 +130,7 @@ namespace Aucovei.Device
 
                 this.displayManager.AppendText("Initializing system...", 0, 0);
                 this.displayManager.AppendText(">Connecting slave...", 5, 1);
-                await this.InitializeArduinoSlave();
+                await this.InitializeI2CSlaveAsync();
                 while (!this.isArduinoSlaveSetup)
                 {
                     this.displayManager.AppendText(">Searching...", 10, 2);
@@ -183,23 +175,23 @@ namespace Aucovei.Device
             }
         }
 
-        private async Task InitializeArduinoSlave()
+        private async Task InitializeI2CSlaveAsync()
         {
-            var settings = new I2cConnectionSettings(SLAVEADDRESS); // Slave Address of Arduino Uno 
+            var settings = new I2cConnectionSettings(Constants.SLAVEADDRESS); // Slave Address of Arduino Uno 
             settings.BusSpeed = I2cBusSpeed.FastMode; // this bus has 400Khz speed
-            //var controller = await I2cController.GetDefaultAsync();
-            //this.arduino = controller.GetDevice(settings);
+                                                      //var controller = await I2cController.GetDefaultAsync();
+                                                      //this.arduino = controller.GetDevice(settings);
 
             // ALTERNATE WAY FOR USING I2C. BUT DOSENT WORK WITH DMDD
             //Use the I2CBus device selector to create an advanced query syntax string
-            const string I2CControllerName = "I2C1";
-            string aqs = I2cDevice.GetDeviceSelector(I2CControllerName);
+
+            string aqs = I2cDevice.GetDeviceSelector(Constants.I2CControllerName);
             //Use the Windows.Devices.Enumeration.DeviceInformation class to create a collection using the advanced query syntax string
             DeviceInformationCollection dis = await DeviceInformation.FindAllAsync(aqs);
             //Instantiate the the I2C device using the device id of the I2CBus and the I2CConnectionSettings
             this.arduino = await I2cDevice.FromIdAsync(dis[0].Id, settings);
 
-            this.arduinoDataReadTimer.Tick += this.ArduinoDataReadTimer_Tick; // We will create an event handler 
+            this.arduinoDataReadTimer.Tick += this.I2CReadTimer_Tick; // We will create an event handler 
             this.arduinoDataReadTimer.Interval = new TimeSpan(0, 0, 0, 0, 100); // Timer_Tick is executed every 500 milli second
             this.arduinoDataReadTimer.Start();
         }
@@ -224,12 +216,7 @@ namespace Aucovei.Device
             var mediaFrameFormats = await camera.GetMediaFrameFormatsAsync();
             ConfigurationFile.SetSupportedVideoFrameFormats(mediaFrameFormats);
             var videoSetting = await ConfigurationFile.Read(mediaFrameFormats);
-
-            //await camera.Initialize(videoSetting);
-            //camera.Start();
-
             this.httpServer = new HttpServer(camera, videoSetting);
-            //this.httpServer.Start();
         }
 
         /// <summary>
@@ -300,22 +287,7 @@ namespace Aucovei.Device
             rfcommProvider.SdpRawAttributes.Add(Constants.SdpServiceNameAttributeId, sdpWriter.DetachBuffer());
         }
 
-        private void DisplayNetworkInfo()
-        {
-            var ip = this.GetIPAddress();
-            if (ip != null)
-            {
-                this.displayManager.AppendImage(DisplayImages.WifiConnected, 0, 0);
-                this.displayManager.AppendText("  " + ip, 15, 0);
-            }
-            else
-            {
-                this.displayManager.AppendImage(DisplayImages.WifiConnected, 0, 0);
-                this.displayManager.AppendText("  Not connected!", 15, 0);
-            }
-        }
-
-        private async void ArduinoDataReadTimer_Tick(object sender, object e)
+        private async void I2CReadTimer_Tick(object sender, object e)
         {
             var response = new byte[10];
 
@@ -338,19 +310,8 @@ namespace Aucovei.Device
             data = data.TrimEnd('?');
             if (!string.IsNullOrEmpty(data))
             {
-                this.ConvertSpeedToMeterPerSecond(data);
-            }
-        }
-
-        private void ConvertSpeedToMeterPerSecond(string data)
-        {
-            const double wheelradiusMeters = 0.0315;
-            if (int.TryParse(data, out var rps))
-            {
-                var speed = wheelradiusMeters * (2 * Math.PI) * (rps);
-                this.speedInmPerSecond = Math.Round(speed, 2);
-                var speedString = string.Concat(this.speedInmPerSecond.ToString(CultureInfo.InvariantCulture), " m/s");
-                // this.WriteToOutputTextBlock(speedString);
+                var result = Helper.Helpers.ConvertRPSToMeterPerSecond(data);
+                // this.WriteToOutputTextBlock(result.ToString());
             }
         }
 
@@ -486,7 +447,7 @@ namespace Aucovei.Device
             Debug.Write("Connected to Client: " + remoteDevice.Name);
 
             //SendMessage("Connected!");
-            this.SendMessage("hostip:" + this.GetIPAddress());
+            this.SendMessage("hostip:" + Helper.Helpers.GetIPAddress());
             await Task.Delay(500);
             this.SendMessage("Ready!");
 
@@ -530,13 +491,8 @@ namespace Aucovei.Device
                         }
 
                         var message = reader.ReadString(currentLength);
-                        if (this.wasObstacleDetected &&
-                            string.Equals(message, Commands.DriveForward, StringComparison.OrdinalIgnoreCase))
-                        {
-                            continue;
-                        }
-
                         this.WriteToOutputTextBlock(message);
+
                         await this.ExecuteCommandAsync(message);
 
                         Debug.Write("Received: " + message);
@@ -810,6 +766,21 @@ namespace Aucovei.Device
             }
         }
 
+        private void DisplayNetworkInfo()
+        {
+            var ip = Helper.Helpers.GetIPAddress();
+            if (ip != null)
+            {
+                this.displayManager.AppendImage(DisplayImages.WifiConnected, 0, 0);
+                this.displayManager.AppendText("  " + ip, 15, 0);
+            }
+            else
+            {
+                this.displayManager.AppendImage(DisplayImages.WifiConnected, 0, 0);
+                this.displayManager.AppendText("  Not connected!", 15, 0);
+            }
+        }
+
         private void UpdateDisplayWithSpeed()
         {
             var task = this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
@@ -818,20 +789,6 @@ namespace Aucovei.Device
                      var speedString = string.Concat(this.speedInmPerSecond.ToString(CultureInfo.InvariantCulture), " m/s");
                      this.displayManager.AppendText(speedString, 80, 2);
                  });
-        }
-
-        private IPAddress GetIPAddress()
-        {
-            var IpAddress = new List<string>();
-            var Hosts = NetworkInformation.GetHostNames().ToList();
-            foreach (var Host in Hosts)
-            {
-                var IP = Host.DisplayName;
-                IpAddress.Add(IP);
-            }
-
-            var address = IPAddress.Parse(IpAddress.Last());
-            return address;
         }
 
         /// <summary>
@@ -973,6 +930,16 @@ namespace Aucovei.Device
                         break;
                     case VoiceCommandType.AutoDrive:
                         response = "Switching autonomous driving mode ";
+                        if (this.isVoiceModeActive)
+                        {
+                            response = "Command failed. Voice mode is active!";
+                            response = response + "...";
+                            this.Speak(response);
+                            this.WriteToCommandTextBlock(response, "❗️");
+
+                            break;
+                        }
+
                         if (Enum.TryParse(voiceCommand.Data, true, out toggleCommandState))
                         {
                             response = response + toggleCommandState.ToString().ToLowerInvariant() + "...";
@@ -986,7 +953,7 @@ namespace Aucovei.Device
                             }
 
                             this.Speak(response);
-                            this.WriteToCommandTextBlock(response, "🤖", 1);
+                            this.WriteToCommandTextBlock(response, "🚗", 1);
                         }
                         break;
                     case VoiceCommandType.VoiceMode:
@@ -1052,7 +1019,7 @@ namespace Aucovei.Device
                         {
                             response = response + camerairection.ToString().ToLowerInvariant() + "...";
                             this.Speak(response);
-                            await this.ExecuteCommandAsync(this.MapCameraDirectionToCommand(camerairection));
+                            await this.ExecuteCommandAsync(Helper.Helpers.MapCameraDirectionToCommand(camerairection));
                             this.WriteToCommandTextBlock(response, "📸", 1);
                         }
 
@@ -1074,25 +1041,15 @@ namespace Aucovei.Device
                         {
                             response = response + drivingDirection.ToString().ToLowerInvariant() + "...";
                             this.Speak(response);
-                            await this.ExecuteCommandAsync(this.MapDrivingDirectionToCommand(drivingDirection));
+                            await this.ExecuteCommandAsync(Helper.Helpers.MapDrivingDirectionToCommand(drivingDirection));
                             this.WriteToCommandTextBlock(response, "🏃‍", 1);
                         }
-
-                        //cts = new CancellationTokenSource();
-                        //await ThreadPool.RunAsync(async (s) =>
-                        //{
-                        //    await controller.ContinuousMove(100, 700, cts.Token);
-                        //    EnableButton(moveButton, true);
-                        //});
                         break;
                     case VoiceCommandType.Stop:
                         response = "Stopping...";
                         this.Speak(response);
                         this.WriteToCommandTextBlock(response, "🛑", 1);
-
-                        // cts?.Cancel();
                         this.WriteToOutputTextBlock("Stopping...");
-                        // controller.Roomba.Halt(StopReason.Cancellation);
                         break;
                     default:
                         //response = "Sorry, I didn't get that." + Environment.NewLine + "Try \"Go to room 2011\"";
@@ -1108,40 +1065,6 @@ namespace Aucovei.Device
             }
         }
 
-        private string MapDrivingDirectionToCommand(Commands.DrivingDirection drivingDirection)
-        {
-            switch (drivingDirection)
-            {
-                default:
-                case Commands.DrivingDirection.Forward:
-                    return Commands.DriveForward;
-                case Commands.DrivingDirection.Reverse:
-                    return Commands.DriveReverse;
-                case Commands.DrivingDirection.Left:
-                    return Commands.DriveLeft;
-                case Commands.DrivingDirection.Right:
-                    return Commands.DriveRight;
-            }
-        }
-
-        private string MapCameraDirectionToCommand(Commands.CameraDirection cameraDirection)
-        {
-            switch (cameraDirection)
-            {
-                default:
-                case Commands.CameraDirection.Center:
-                    return Commands.PanTiltCenter;
-                case Commands.CameraDirection.Up:
-                    return Commands.TiltUp;
-                case Commands.CameraDirection.Down:
-                    return Commands.TiltDown;
-                case Commands.CameraDirection.Left:
-                    return Commands.PanLeft;
-                case Commands.CameraDirection.Right:
-                    return Commands.PanRight;
-            }
-        }
-
         private void VoiceController_ResponseReceived(object sender, VoiceCommandControllerEventArgs e)
         {
             string text = e.Data as string;
@@ -1150,13 +1073,13 @@ namespace Aucovei.Device
                 switch (text)
                 {
                     case "TriggerSuccess":
-                        this.WriteToCommandTextBlock("Please say a command...", "😃", 10000);
+                        this.WriteToCommandTextBlock("Please say a command...", "🤖", 10000);
                         break;
                     case "TimeoutExceeded":
                         this.ShowVoiceCommandPanel(false);
                         break;
                     default:
-                        this.WriteToCommandTextBlock(text);
+                        this.WriteToCommandTextBlock(text, "🤖");
                         break;
                 }
             }
