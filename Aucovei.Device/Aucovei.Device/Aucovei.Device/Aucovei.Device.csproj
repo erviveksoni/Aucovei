@@ -134,13 +134,23 @@
     <None Include="Aucovei.Device_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\aucovei.png" />
     <Content Include="Assets\BadgeLogo.scale-400.png" />
+    <Content Include="Assets\bluetooth.png" />
     <Content Include="Assets\BootUp.mp3" />
     <Content Include="Assets\BootUp_fast.mp3" />
     <Content Include="Assets\CensorBeep.mp3" />
     <Content Include="Assets\Default.mp3" />
     <Content Include="Assets\Disconnected.mp3" />
     <Content Include="Assets\Horn.mp3" />
+    <Content Include="Assets\lightoff.png" />
+    <Content Include="Assets\lighton.png" />
+    <Content Include="Assets\microphone.png" />
+    <Content Include="Assets\parked.png" />
+    <Content Include="Assets\photocameraoff.png" />
+    <Content Include="Assets\photocameraon.png" />
+    <Content Include="Assets\speed.png" />
+    <Content Include="Assets\wifi-signal.png" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\SplashScreen.scale-200.png" />

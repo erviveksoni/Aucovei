@@ -20,6 +20,7 @@ using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Media.Imaging;
 using UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -116,6 +117,7 @@ namespace Aucovei.Device
                     throw new IOException("GPIO interface not found");
                 }
 
+                this.SetControlModeonUi(null, null);
                 this.ultrasonicsensor = new HCSR04(Constants.TriggerPin, Constants.EchoPin, 1);
                 this.cameraLedPin = this.gpio.OpenPin(Constants.LedPin);
                 this.cameraLedPin.Write(GpioPinValue.Low);
@@ -293,7 +295,7 @@ namespace Aucovei.Device
 
             try
             {
-                this.arduino.Read(response); // this funtion will read data from Arduino 
+                this.arduino.Read(response); // this funtion will read displayName from Arduino 
                 this.isArduinoSlaveSetup = true;
             }
             catch (Exception p)
@@ -311,7 +313,7 @@ namespace Aucovei.Device
             if (!string.IsNullOrEmpty(data))
             {
                 var result = Helper.Helpers.ConvertRPSToMeterPerSecond(data);
-                // this.WriteToOutputTextBlock(result.ToString());
+                this.UpdateDisplayWithSpeed();
             }
         }
 
@@ -436,6 +438,7 @@ namespace Aucovei.Device
 
             // Note - this is the supported way to get a Bluetooth device from a given socket
             var remoteDevice = await BluetoothDevice.FromHostNameAsync(this.socket.Information.RemoteHostName);
+            this.SetControlModeonUi("Bluetooth", remoteDevice.Name);
 
             this.writer = new DataWriter(this.socket.OutputStream);
             var reader = new DataReader(this.socket.InputStream);
@@ -463,7 +466,7 @@ namespace Aucovei.Device
                     // Based on the protocol we've defined, the first uint is the size of the message
                     var readLength = await reader.LoadAsync(sizeof(uint));
 
-                    // Check if the size of the data is expected (otherwise the remote has already terminated the connection)
+                    // Check if the size of the displayName is expected (otherwise the remote has already terminated the connection)
                     if (readLength < sizeof(uint))
                     {
                         remoteDisconnection = true;
@@ -476,10 +479,10 @@ namespace Aucovei.Device
                         return;
                     }
 
-                    // Load the rest of the message since you already know the length of the data expected.
+                    // Load the rest of the message since you already know the length of the displayName expected.
                     readLength = await reader.LoadAsync(currentLength);
 
-                    // Check if the size of the data is expected (otherwise the remote has already terminated the connection)
+                    // Check if the size of the displayName is expected (otherwise the remote has already terminated the connection)
                     if (readLength < currentLength)
                     {
                         remoteDisconnection = true;
@@ -512,6 +515,7 @@ namespace Aucovei.Device
         private async void Disconnect()
         {
             this.playbackService.PlaySoundFromFile(PlaybackService.SoundFiles.Disconnected);
+            this.SetControlModeonUi(null, null);
 
             if (this.writer != null)
             {
@@ -638,6 +642,7 @@ namespace Aucovei.Device
 
                         this.displayManager.AppendImage(DisplayImages.Logo_16_16, 0, 1);
                         this.Speak("Autonomous mode on!");
+                        this.SetControlModeonUi("Autonomous", "Autonomous");
 
                         break;
                     }
@@ -660,6 +665,7 @@ namespace Aucovei.Device
                         this.arduino.Write(result);
 
                         this.Speak("Autonomous mode off!");
+                        this.SetControlModeonUi(null, null);
 
                         break;
                     }
@@ -694,6 +700,7 @@ namespace Aucovei.Device
 
                         this.SendMessage("CAMON");
                         this.displayManager.AppendImage(DisplayImages.Camera, 0, 2);
+                        this.SetUiButtonStates("camera", Commands.ToggleCommandState.On);
 
                         break;
                     }
@@ -706,6 +713,7 @@ namespace Aucovei.Device
                         }
                         this.SendMessage("CAMOFF");
                         this.displayManager.ClearRow(2);
+                        this.SetUiButtonStates("camera", Commands.ToggleCommandState.Off);
 
                         break;
                     }
@@ -743,12 +751,14 @@ namespace Aucovei.Device
                 case Commands.CameraLedOn:
                     {
                         this.cameraLedPin.Write(GpioPinValue.High);
+                        this.SetUiButtonStates("lights", Commands.ToggleCommandState.On);
 
                         break;
                     }
                 case Commands.CameraLedOff:
                     {
                         this.cameraLedPin.Write(GpioPinValue.Low);
+                        this.SetUiButtonStates("lights", Commands.ToggleCommandState.Off);
 
                         break;
                     }
@@ -766,6 +776,7 @@ namespace Aucovei.Device
             var ip = Helper.Helpers.GetIPAddress();
             if (ip != null)
             {
+                this.WiifiInfoValue.Text = ip.ToString();
                 this.displayManager.AppendImage(DisplayImages.WifiConnected, 0, 0);
                 this.displayManager.AppendText("  " + ip, 15, 0);
             }
@@ -782,7 +793,8 @@ namespace Aucovei.Device
                  () =>
                  {
                      var speedString = string.Concat(this.speedInmPerSecond.ToString(CultureInfo.InvariantCulture), " m/s");
-                     this.displayManager.AppendText(speedString, 80, 3);
+                     // this.displayManager.AppendText(speedString, 80, 3);
+                     this.SpeedInfoValue.Text = speedString;
                  });
         }
 
@@ -962,14 +974,19 @@ namespace Aucovei.Device
                                 this.displayManager.AppendImage(DisplayImages.Mic, 0, 1);
 
                                 await this.ExecuteCommandAsync(Commands.SpeedSlow);
+
+                                this.SetControlModeonUi("voice", "Voice");
                             }
                             else
                             {
-                                this.displayManager.ClearRow(1);
-
                                 // Stop vehicle and reset speed
                                 await this.ExecuteCommandAsync(Commands.DriveStop);
                                 await this.ExecuteCommandAsync(Commands.SpeedNormal);
+
+                                this.displayManager.ClearRow(1);
+                                this.displayManager.ClearRow(3);
+
+                                this.SetControlModeonUi(null, null);
                             }
 
                             this.Speak(response);
@@ -1090,6 +1107,62 @@ namespace Aucovei.Device
         private void closeVoiceCommandButton_Click(object sender, RoutedEventArgs e)
         {
             this.ShowVoiceCommandPanel(false);
+        }
+
+        private async void SetControlModeonUi(string mode, string displayName)
+        {
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, async () =>
+            {
+                if (string.Equals(mode, "autonomous", StringComparison.OrdinalIgnoreCase))
+                {
+                    this.ControlerModeIcon.Source = new BitmapImage(new Uri("ms-appx:///Assets/aucovei.png", UriKind.RelativeOrAbsolute));
+                    this.ControlerModeValue.Text = displayName;
+                }
+                else if (string.Equals(mode, "bluetooth", StringComparison.OrdinalIgnoreCase))
+                {
+                    this.ControlerModeIcon.Source = new BitmapImage(new Uri("ms-appx:///Assets/bluetooth.png", UriKind.RelativeOrAbsolute));
+                    this.ControlerModeValue.Text = displayName;
+                }
+                else if (string.Equals(mode, "voice", StringComparison.OrdinalIgnoreCase))
+                {
+                    this.ControlerModeIcon.Source = new BitmapImage(new Uri("ms-appx:///Assets/microphone.png", UriKind.RelativeOrAbsolute));
+                    this.ControlerModeValue.Text = displayName;
+                }
+                else
+                {
+                    this.ControlerModeIcon.Source = new BitmapImage(new Uri("ms-appx:///Assets/parked.png", UriKind.RelativeOrAbsolute));
+                    this.ControlerModeValue.Text = "Parked";
+                }
+            });
+        }
+
+        private async void SetUiButtonStates(string contol, Commands.ToggleCommandState state)
+        {
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, async () =>
+            {
+                if (string.Equals(contol, "camera", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (state == Commands.ToggleCommandState.On)
+                    {
+                        this.CameraIndicator.Source = new BitmapImage(new Uri("ms-appx:///Assets/photocameraon.png", UriKind.RelativeOrAbsolute));
+                    }
+                    else
+                    {
+                        this.CameraIndicator.Source = new BitmapImage(new Uri("ms-appx:///Assets/photocameraoff.png", UriKind.RelativeOrAbsolute));
+                    }
+                }
+                else if (string.Equals(contol, "lights", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (state == Commands.ToggleCommandState.On)
+                    {
+                        this.CameraLight.Source = new BitmapImage(new Uri("ms-appx:///Assets/lighton.png", UriKind.RelativeOrAbsolute));
+                    }
+                    else
+                    {
+                        this.CameraLight.Source = new BitmapImage(new Uri("ms-appx:///Assets/lightoff.png", UriKind.RelativeOrAbsolute));
+                    }
+                }
+            });
         }
 
         private void MainPage_Unloaded(object sender, object args)
