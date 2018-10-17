@@ -59,6 +59,10 @@
         public const string SpeedNormal = "SPEEDNORMAL";
         public const string SpeedNormalValue = "160";
 
+
+        public const string SpeedStop = "SPEEDSTOP";
+        public const string SpeedStopValue = "0";
+
         public enum ToggleCommandState
         {
             On,

@@ -335,7 +335,6 @@ namespace Aucovei.Device
                     this.WriteToOutputTextBlock("OBSTACLE " + distance);
 
                     await this.ExecuteCommandAsync(Commands.DriveStop);
-                    await this.ExecuteCommandAsync(Commands.SpeedSlow);
 
                     this.wasObstacleDetected = true;
 
@@ -375,7 +374,6 @@ namespace Aucovei.Device
                     this.distanceCounter = 10;
                     this.wasObstacleDetected = false;
                     this.WriteToOutputTextBlock("RESUME " + distance);
-                    await this.ExecuteCommandAsync(Commands.SpeedNormal);
                     await this.ExecuteCommandAsync(Commands.DriveForward);
                 }
                 else
@@ -446,69 +444,61 @@ namespace Aucovei.Device
             this.playbackService.PlaySoundFromFile(PlaybackService.SoundFiles.Default);
             Debug.Write("Connected to Client: " + remoteDevice.Name);
 
-            //SendMessage("Connected!");
             this.SendMessage("hostip:" + Helper.Helpers.GetIPAddress());
             await Task.Delay(500);
             this.SendMessage("Ready!");
 
+            // Set speed to normal
             await this.ExecuteCommandAsync(Commands.SpeedNormal);
 
             this.displayManager.ClearRow(1);
             this.displayManager.AppendImage(DisplayImages.BluetoothFind2, 0, 1);
             this.displayManager.AppendText(" " + remoteDevice.Name, 20, 1);
 
-            try
+            // Infinite read buffer loop
+            while (true)
             {
-                // Infinite read buffer loop
-                while (true)
+                try
                 {
-                    try
+                    // Based on the protocol we've defined, the first uint is the size of the message
+                    var readLength = await reader.LoadAsync(sizeof(uint));
+
+                    // Check if the size of the data is expected (otherwise the remote has already terminated the connection)
+                    if (readLength < sizeof(uint))
                     {
-                        // Based on the protocol we've defined, the first uint is the size of the message
-                        var readLength = await reader.LoadAsync(sizeof(uint));
-
-                        // Check if the size of the data is expected (otherwise the remote has already terminated the connection)
-                        if (readLength < sizeof(uint))
-                        {
-                            remoteDisconnection = true;
-                            break;
-                        }
-
-                        var currentLength = reader.ReadUInt32();
-                        if (currentLength == 0)
-                        {
-                            return;
-                        }
-
-                        // Load the rest of the message since you already know the length of the data expected.
-                        readLength = await reader.LoadAsync(currentLength);
-
-                        // Check if the size of the data is expected (otherwise the remote has already terminated the connection)
-                        if (readLength < currentLength)
-                        {
-                            remoteDisconnection = true;
-                            break;
-                        }
-
-                        var message = reader.ReadString(currentLength);
-                        this.WriteToOutputTextBlock(message);
-
-                        await this.ExecuteCommandAsync(message);
-
-                        Debug.Write("Received: " + message);
-                    }
-                    // Catch exception HRESULT_FROM_WIN32(ERROR_OPERATION_ABORTED).
-                    catch (Exception ex) when ((uint)ex.HResult == 0x800703E3)
-                    {
-                        Debug.Write("Client Disconnected Successfully");
+                        remoteDisconnection = true;
                         break;
                     }
+
+                    var currentLength = reader.ReadUInt32();
+                    if (currentLength == 0)
+                    {
+                        return;
+                    }
+
+                    // Load the rest of the message since you already know the length of the data expected.
+                    readLength = await reader.LoadAsync(currentLength);
+
+                    // Check if the size of the data is expected (otherwise the remote has already terminated the connection)
+                    if (readLength < currentLength)
+                    {
+                        remoteDisconnection = true;
+                        break;
+                    }
+
+                    var message = reader.ReadString(currentLength);
+                    this.WriteToOutputTextBlock(message);
+
+                    await this.ExecuteCommandAsync(message);
+
+                    Debug.Write("Received: " + message);
                 }
-            }
-            catch (Exception ex)
-            {
-                Debug.Write(ex);
-                throw;
+                // Catch exception HRESULT_FROM_WIN32(ERROR_OPERATION_ABORTED).
+                catch (Exception ex) when ((uint)ex.HResult == 0x800703E3)
+                {
+                    Debug.Write("Client Disconnected Successfully");
+                    break;
+                }
             }
 
             reader.DetachStream();
@@ -522,9 +512,6 @@ namespace Aucovei.Device
         private async void Disconnect()
         {
             this.playbackService.PlaySoundFromFile(PlaybackService.SoundFiles.Disconnected);
-
-            this.displayManager.ClearRow(1);
-            this.displayManager.AppendImage(DisplayImages.BluetoothDisconnected, 0, 1);
 
             if (this.writer != null)
             {
@@ -544,9 +531,9 @@ namespace Aucovei.Device
                 await server?.Stop();
             }
 
-            var roverSpeed = Encoding.Unicode.GetBytes(Commands.DriveStopValue);
-            this.arduino.Write(roverSpeed);
+            await this.ExecuteCommandAsync(Commands.DriveStop);
 
+            this.displayManager.ClearRow(1);
             this.displayManager.ClearRow(2);
             this.displayManager.ClearRow(3);
             Debug.Write("Disconected");
@@ -554,8 +541,9 @@ namespace Aucovei.Device
 
         private async Task ExecuteCommandAsync(string commandText)
         {
-            var turnSpeed = Encoding.Unicode.GetBytes(Commands.SpeedSlowValue);
-            var normalSpeed = Encoding.Unicode.GetBytes(Commands.SpeedNormalValue);
+            // var inputSpeed = Encoding.Unicode.GetBytes(speed);
+            // var turnSpeed = Encoding.Unicode.GetBytes(Commands.SpeedSlowValue);
+            // var normalSpeed = Encoding.Unicode.GetBytes(Commands.SpeedNormalValue);
 
             switch (commandText)
             {
@@ -563,9 +551,9 @@ namespace Aucovei.Device
                     {
                         var result = Encoding.Unicode.GetBytes(Commands.DriveForwardValue);
                         this.arduino.Write(result);
-                        this.displayManager.AppendImage(DisplayImages.TopArrow, 0, 2);
-                        this.displayManager.AppendText("Drive", 17, 2);
-                        this.UpdateDisplayWithSpeed();
+                        this.displayManager.AppendImage(DisplayImages.TopArrow, 0, 3);
+                        this.displayManager.AppendText("Drive", 19, 3);
+                        //this.UpdateDisplayWithSpeed();
 
                         break;
                     }
@@ -576,33 +564,29 @@ namespace Aucovei.Device
 
                         var result = Encoding.Unicode.GetBytes(Commands.DriveReverseValue);
                         this.arduino.Write(result);
-                        this.displayManager.AppendImage(DisplayImages.BottomArrow, 0, 2);
-                        this.displayManager.AppendText("Drive", 17, 2);
-                        this.UpdateDisplayWithSpeed();
+                        this.displayManager.AppendImage(DisplayImages.BottomArrow, 0, 3);
+                        this.displayManager.AppendText("Drive", 19, 3);
+                        //this.UpdateDisplayWithSpeed();
 
                         break;
                     }
                 case Commands.DriveLeft:
                     {
                         var result = Encoding.Unicode.GetBytes(Commands.DriveLeftValue);
-                        this.arduino.Write(turnSpeed);
                         this.arduino.Write(result);
-                        this.displayManager.AppendImage(DisplayImages.LeftArrow, 0, 2);
-                        this.displayManager.AppendText("Drive", 17, 2);
-                        this.UpdateDisplayWithSpeed();
-                        this.arduino.Write(normalSpeed);
+                        this.displayManager.AppendImage(DisplayImages.LeftArrow, 0, 3);
+                        this.displayManager.AppendText("Drive", 19, 3);
+                        //this.UpdateDisplayWithSpeed();
 
                         break;
                     }
                 case Commands.DriveRight:
                     {
                         var result = Encoding.Unicode.GetBytes(Commands.DriveRightValue);
-                        this.arduino.Write(turnSpeed);
                         this.arduino.Write(result);
-                        this.displayManager.AppendImage(DisplayImages.RightArrow, 0, 2);
-                        this.displayManager.AppendText("Drive", 17, 2);
-                        this.UpdateDisplayWithSpeed();
-                        this.arduino.Write(normalSpeed);
+                        this.displayManager.AppendImage(DisplayImages.RightArrow, 0, 3);
+                        this.displayManager.AppendText("Drive", 19, 3);
+                        //this.UpdateDisplayWithSpeed();
 
                         break;
                     }
@@ -611,37 +595,37 @@ namespace Aucovei.Device
                         var result = Encoding.Unicode.GetBytes(Commands.DriveStopValue);
                         this.arduino.Write(result);
                         this.displayManager.ClearRow(2);
-                        this.displayManager.AppendImage(DisplayImages.Stop, 0, 2);
-                        this.displayManager.AppendText("Stop", 16, 2);
+                        this.displayManager.AppendImage(DisplayImages.Stop, 0, 3);
+                        this.displayManager.AppendText("Stop", 19, 3);
 
                         break;
                     }
                 case Commands.DriveReverseLeft:
                     {
                         var result = Encoding.Unicode.GetBytes(Commands.DriveReverseLeftValue);
-                        this.arduino.Write(turnSpeed);
                         this.arduino.Write(result);
-                        this.displayManager.AppendImage(DisplayImages.LeftArrow, 0, 2);
-                        this.displayManager.AppendText("Drive", 17, 2);
-                        this.UpdateDisplayWithSpeed();
-                        this.arduino.Write(normalSpeed);
+                        this.displayManager.AppendImage(DisplayImages.LeftArrow, 0, 3);
+                        this.displayManager.AppendText("Drive", 19, 3);
+                        //this.UpdateDisplayWithSpeed();
 
                         break;
                     }
                 case Commands.DriveReverseRight:
                     {
                         var result = Encoding.Unicode.GetBytes(Commands.DriveReverseRightValue);
-                        this.arduino.Write(turnSpeed);
                         this.arduino.Write(result);
-                        this.displayManager.AppendImage(DisplayImages.RightArrow, 0, 2);
-                        this.displayManager.AppendText("Drive", 17, 2);
-                        this.UpdateDisplayWithSpeed();
-                        this.arduino.Write(normalSpeed);
+                        this.displayManager.AppendImage(DisplayImages.RightArrow, 0, 3);
+                        this.displayManager.AppendText("Drive", 19, 3);
+                        // this.UpdateDisplayWithSpeed();
 
                         break;
                     }
                 case Commands.DriveAutoModeOn:
                     {
+                        // set speed to slow for auto mode
+                        var result = Encoding.Unicode.GetBytes(Commands.SpeedSlowValue);
+                        this.arduino.Write(result);
+
                         await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal,
                             () =>
                             {
@@ -649,10 +633,10 @@ namespace Aucovei.Device
                                 this.ultrasonictimer.Start();
                             });
 
-                        this.arduino.Write(turnSpeed);
-                        var result = Encoding.Unicode.GetBytes(Commands.DriveForwardValue);
+                        result = Encoding.Unicode.GetBytes(Commands.DriveForwardValue);
                         this.arduino.Write(result);
-                        this.displayManager.AppendImage(DisplayImages.Logo_16_16, 110, 0);
+
+                        this.displayManager.AppendImage(DisplayImages.Logo_16_16, 0, 1);
                         this.Speak("Autonomous mode on!");
 
                         break;
@@ -667,11 +651,22 @@ namespace Aucovei.Device
                                 this.ultrasonictimer.Stop();
                             });
 
-                        this.DisplayNetworkInfo();
-                        this.arduino.Write(normalSpeed);
+                        this.displayManager.ClearRow(1);
                         var result = Encoding.Unicode.GetBytes(Commands.DriveStopValue);
                         this.arduino.Write(result);
+
+                        // set speed normal when exiting auto mode
+                        result = Encoding.Unicode.GetBytes(Commands.SpeedNormalValue);
+                        this.arduino.Write(result);
+
                         this.Speak("Autonomous mode off!");
+
+                        break;
+                    }
+                case Commands.SpeedStop:
+                    {
+                        var result = Encoding.Unicode.GetBytes(Commands.SpeedStopValue);
+                        this.arduino.Write(result);
 
                         break;
                     }
@@ -698,7 +693,19 @@ namespace Aucovei.Device
                         }
 
                         this.SendMessage("CAMON");
-                        this.displayManager.AppendImage(DisplayImages.Camera, 100, 1);
+                        this.displayManager.AppendImage(DisplayImages.Camera, 0, 2);
+
+                        break;
+                    }
+                case Commands.CameraOff:
+                    {
+                        var server = this.httpServer;
+                        if (server != null)
+                        {
+                            await server?.Stop();
+                        }
+                        this.SendMessage("CAMOFF");
+                        this.displayManager.ClearRow(2);
 
                         break;
                     }
@@ -725,18 +732,6 @@ namespace Aucovei.Device
                 case Commands.PanTiltCenter:
                     {
                         await this.panTiltServo.ExecuteCommand(Commands.PanTiltCenterValue);
-                        break;
-                    }
-                case Commands.CameraOff:
-                    {
-                        var server = this.httpServer;
-                        if (server != null)
-                        {
-                            await server?.Stop();
-                        }
-                        this.SendMessage("CAMOFF");
-                        this.displayManager.ClearCharacterRange(1, 100, 128);
-
                         break;
                     }
                 case Commands.Horn:
@@ -787,7 +782,7 @@ namespace Aucovei.Device
                  () =>
                  {
                      var speedString = string.Concat(this.speedInmPerSecond.ToString(CultureInfo.InvariantCulture), " m/s");
-                     this.displayManager.AppendText(speedString, 80, 2);
+                     this.displayManager.AppendText(speedString, 80, 3);
                  });
         }
 
@@ -964,14 +959,16 @@ namespace Aucovei.Device
                             this.isVoiceModeActive = toggleCommandState == Commands.ToggleCommandState.On;
                             if (this.isVoiceModeActive)
                             {
-                                this.displayManager.AppendImage(DisplayImages.Mic, 0, 3);
+                                this.displayManager.AppendImage(DisplayImages.Mic, 0, 1);
 
                                 await this.ExecuteCommandAsync(Commands.SpeedSlow);
                             }
                             else
                             {
-                                this.displayManager.ClearRow(3);
+                                this.displayManager.ClearRow(1);
 
+                                // Stop vehicle and reset speed
+                                await this.ExecuteCommandAsync(Commands.DriveStop);
                                 await this.ExecuteCommandAsync(Commands.SpeedNormal);
                             }
 
@@ -1052,6 +1049,7 @@ namespace Aucovei.Device
                     case VoiceCommandType.Stop:
                         response = "Stopping...";
                         this.Speak(response);
+                        await this.ExecuteCommandAsync(Commands.DriveStop);
                         this.WriteToCommandTextBlock(response, "🛑", 1);
                         this.WriteToOutputTextBlock("Stopping...");
                         break;

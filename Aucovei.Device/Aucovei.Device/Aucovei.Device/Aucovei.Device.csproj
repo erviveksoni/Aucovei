@@ -116,7 +116,7 @@
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
-    <Compile Include="PanTiltServo.cs" />
+    <Compile Include="Servo\PanTiltServo.cs" />
     <Compile Include="PlaybackService\PlaybackService.cs" />
     <Compile Include="PlaybackService\VoiceCommandController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
