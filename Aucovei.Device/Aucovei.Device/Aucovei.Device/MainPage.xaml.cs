@@ -964,10 +964,14 @@ namespace Aucovei.Device
                             this.isVoiceModeActive = toggleCommandState == Commands.ToggleCommandState.On;
                             if (this.isVoiceModeActive)
                             {
+                                this.displayManager.AppendImage(DisplayImages.Mic, 0, 3);
+
                                 await this.ExecuteCommandAsync(Commands.SpeedSlow);
                             }
-                            else if (this.isVoiceModeActive)
+                            else
                             {
+                                this.displayManager.ClearRow(3);
+
                                 await this.ExecuteCommandAsync(Commands.SpeedNormal);
                             }
 
