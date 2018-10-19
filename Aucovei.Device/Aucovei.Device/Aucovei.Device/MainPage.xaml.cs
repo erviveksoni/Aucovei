@@ -6,9 +6,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Aucovei.Device.Configuration;
 using Aucovei.Device.Devices;
+using Aucovei.Device.Gps;
 using Aucovei.Device.Services;
 using Aucovei.Device.Web;
-using UnitsNet;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Rfcomm;
 using Windows.Devices.Enumeration;
@@ -54,8 +54,11 @@ namespace Aucovei.Device
         private PlaybackService playbackService;
         private GpioController gpio;
         private GpioPin cameraLedPin;
-        VoiceCommandController voiceController;
-        DispatcherTimer voiceCommandHideTimer;
+        private VoiceCommandController voiceController;
+        private DispatcherTimer voiceCommandHideTimer;
+        private GpsInformation gpsInformation;
+        private DispatcherTimer gpsInfoTimer;
+        private GpsInformation.GpsStatus lastGpsStatus;
 
         public MainPage()
         {
@@ -120,10 +123,10 @@ namespace Aucovei.Device
                     throw new IOException("GPIO interface not found");
                 }
 
-                this.SetControlModeonUi(null, null);
+                this.UpdateControlModeonUi(null, null);
 
                 this.WriteToOutputTextBlock("Setting up distance sensor...");
-                this.ultrasonicsensor = new HCSR04(Constants.TriggerPin, Constants.EchoPin, 1);
+                this.ultrasonicsensor = new HCSR04(Constants.TriggerPin, Constants.EchoPin);
 
                 this.WriteToOutputTextBlock("Setting up camera...");
                 this.cameraLedPin = this.gpio.OpenPin(Constants.LedPin);
@@ -164,6 +167,9 @@ namespace Aucovei.Device
 
                 await this.panTiltServo.Center();
 
+                this.WriteToOutputTextBlock("Initializing Gps...");
+                this.InitializeGps();
+
                 this.WriteToOutputTextBlock("Initializing video Service...");
                 await this.InitializeVideoService();
 
@@ -194,6 +200,21 @@ namespace Aucovei.Device
                 this.displayManager.AppendText("Initialization error!", 15, 0);
             }
         }
+
+        private GpsInformation.GpsStatus LastGpsStatus
+        {
+            get => this.lastGpsStatus;
+            set
+            {
+                this.lastGpsStatus = value;
+                this.WriteToOutputTextBlock("GPS Status: " + this.lastGpsStatus.ToString());
+                this.UpdateUiButtonStates("gps",
+                    this.lastGpsStatus == GpsInformation.GpsStatus.Active ?
+                        Commands.ToggleCommandState.On :
+                        Commands.ToggleCommandState.Off);
+            }
+        }
+
 
         private async Task InitializeI2CSlaveAsync()
         {
@@ -228,7 +249,17 @@ namespace Aucovei.Device
             this.isAutodriveTimerActive = true;
             this.ultrasonictimer = new DispatcherTimer();
             this.ultrasonictimer.Tick += this.Ultrasonictimer_Tick;
-            this.ultrasonictimer.Interval = new TimeSpan(0, 0, 0, 0, 500);
+            this.ultrasonictimer.Interval = new TimeSpan(0, 0, 0, 0, 200);
+        }
+
+        private void InitializeGps()
+        {
+            this.gpsInformation = new GpsInformation(Constants.GpsBaudRate);
+            this.LastGpsStatus = GpsInformation.GpsStatus.None;
+            this.gpsInfoTimer = new DispatcherTimer();
+            this.gpsInfoTimer.Interval = TimeSpan.FromSeconds(1);
+            this.gpsInfoTimer.Tick += this.GpsInfoTimer_Tick;
+            this.gpsInfoTimer.Start();
         }
 
         private async Task InitializeVideoService()
@@ -346,60 +377,29 @@ namespace Aucovei.Device
                     return;
                 }
 
-                var distance = this.ultrasonicsensor.GetDistance(new Length(2));
-
-                if (distance.Centimeters > 0.0 &&
-                    distance.Centimeters < 80.0)
+                var distance = this.ultrasonicsensor.GetDistance(1000);
+                if (distance.Centimeters < Constants.SafeDistanceCm)
                 {
-                    // Stop timer
-                    this.ultrasonictimer.Stop();
-                    this.WriteToOutputTextBlock("OBSTACLE " + distance);
+                    this.WriteToOutputTextBlock("OBSTACLE in " + distance.Centimeters + "  cm");
 
-                    await this.ExecuteCommandAsync(Commands.DriveStop);
-
-                    this.wasObstacleDetected = true;
-
-                    // Reverse the rover till a safe distance.
-                    while (this.distanceCounter > 0)
+                    if (!this.wasObstacleDetected) // new obstacle. Reverse first!
                     {
-                        if (this.distanceCounter > 5)
-                        {
-                            this.WriteToOutputTextBlock("REVERSE " + this.distanceCounter);
-                            await this.ExecuteCommandAsync(Commands.DriveReverse);
-                        }
-                        else if (this.distanceCounter >= 3 && this.distanceCounter <= 5)
-                        {
-                            this.WriteToOutputTextBlock("REVERSE Left" + this.distanceCounter);
-                            await this.ExecuteCommandAsync(Commands.DriveReverseLeft);
-                        }
-                        else
-                        {
-                            this.WriteToOutputTextBlock("REVERSE " + this.distanceCounter);
-                            await this.ExecuteCommandAsync(Commands.DriveReverse);
-                        }
-
-                        this.distanceCounter--;
-                        await Task.Delay(TimeSpan.FromMilliseconds(50));
+                        this.wasObstacleDetected = true;
+                        this.WriteToOutputTextBlock("Reversing left...");
+                        await this.ExecuteCommandAsync(Commands.DriveReverseLeft);
                     }
+                    else if (this.wasObstacleDetected) // we are still seing the obstacle to reverse left
+                    {
+                        this.WriteToOutputTextBlock("Reversing...");
 
-                    await this.ExecuteCommandAsync(Commands.DriveForward);
-
-                    // Restart timer
-                    this.ultrasonictimer.Start();
+                        await this.ExecuteCommandAsync(Commands.DriveReverse);
+                    }
                 }
-                else if (this.wasObstacleDetected &&
-                         (distance.Centimeters < 0.1 ||
-                          distance.Centimeters > 100.00))
+                else if (this.wasObstacleDetected)
                 {
-                    // Reset variables and rover parameters
-                    this.distanceCounter = 10;
                     this.wasObstacleDetected = false;
-                    this.WriteToOutputTextBlock("RESUME " + distance);
+                    this.WriteToOutputTextBlock("Rover at safe distance...");
                     await this.ExecuteCommandAsync(Commands.DriveForward);
-                }
-                else
-                {
-                    this.WriteToOutputTextBlock("NORMAL " + distance);
                 }
             }
             catch (Exception ex)
@@ -407,6 +407,14 @@ namespace Aucovei.Device
                 Debug.Write(ex);
 
                 throw;
+            }
+        }
+
+        private void GpsInfoTimer_Tick(object sender, object e)
+        {
+            if (this.LastGpsStatus != this.gpsInformation.CurrentGpsStatus)
+            {
+                this.LastGpsStatus = this.gpsInformation.CurrentGpsStatus;
             }
         }
 
@@ -457,7 +465,7 @@ namespace Aucovei.Device
 
             // Note - this is the supported way to get a Bluetooth device from a given socket
             var remoteDevice = await BluetoothDevice.FromHostNameAsync(this.socket.Information.RemoteHostName);
-            this.SetControlModeonUi("Bluetooth", remoteDevice.Name);
+            this.UpdateControlModeonUi("Bluetooth", remoteDevice.Name);
 
             this.writer = new DataWriter(this.socket.OutputStream);
             var reader = new DataReader(this.socket.InputStream);
@@ -534,7 +542,7 @@ namespace Aucovei.Device
         private async void Disconnect()
         {
             this.playbackService.PlaySoundFromFile(PlaybackService.SoundFiles.Disconnected);
-            this.SetControlModeonUi(null, null);
+            this.UpdateControlModeonUi(null, null);
 
             if (this.writer != null)
             {
@@ -661,7 +669,7 @@ namespace Aucovei.Device
 
                         this.displayManager.AppendImage(DisplayImages.Logo_16_16, 0, 1);
                         this.Speak("Autonomous mode on!");
-                        this.SetControlModeonUi("Autonomous", "Autonomous");
+                        this.UpdateControlModeonUi("Autonomous", "Autonomous");
 
                         break;
                     }
@@ -672,7 +680,7 @@ namespace Aucovei.Device
                         await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal,
                             () =>
                             {
-                                this.ultrasonictimer.Stop();
+                                this.ultrasonictimer?.Stop();
                             });
 
                         this.displayManager.ClearRow(1);
@@ -684,7 +692,7 @@ namespace Aucovei.Device
                         this.arduino.Write(result);
 
                         this.Speak("Autonomous mode off!");
-                        this.SetControlModeonUi(null, null);
+                        this.UpdateControlModeonUi(null, null);
 
                         break;
                     }
@@ -719,7 +727,7 @@ namespace Aucovei.Device
 
                         this.SendMessage("CAMON");
                         this.displayManager.AppendImage(DisplayImages.Camera, 0, 2);
-                        this.SetUiButtonStates("camera", Commands.ToggleCommandState.On);
+                        this.UpdateUiButtonStates("camera", Commands.ToggleCommandState.On);
 
                         break;
                     }
@@ -732,7 +740,7 @@ namespace Aucovei.Device
                         }
                         this.SendMessage("CAMOFF");
                         this.displayManager.ClearRow(2);
-                        this.SetUiButtonStates("camera", Commands.ToggleCommandState.Off);
+                        this.UpdateUiButtonStates("camera", Commands.ToggleCommandState.Off);
 
                         break;
                     }
@@ -770,14 +778,14 @@ namespace Aucovei.Device
                 case Commands.CameraLedOn:
                     {
                         this.cameraLedPin.Write(GpioPinValue.High);
-                        this.SetUiButtonStates("lights", Commands.ToggleCommandState.On);
+                        this.UpdateUiButtonStates("lights", Commands.ToggleCommandState.On);
 
                         break;
                     }
                 case Commands.CameraLedOff:
                     {
                         this.cameraLedPin.Write(GpioPinValue.Low);
-                        this.SetUiButtonStates("lights", Commands.ToggleCommandState.Off);
+                        this.UpdateUiButtonStates("lights", Commands.ToggleCommandState.Off);
 
                         break;
                     }
@@ -924,13 +932,10 @@ namespace Aucovei.Device
         private async void VoiceController_CommandReceived(object sender, VoiceCommandControllerEventArgs e)
         {
             string response = "Sorry, I didn't get that.";
-            Commands.ToggleCommandState toggleCommandState;
-            Commands.DrivingDirection drivingDirection;
-            Commands.CameraDirection camerairection;
-
 
             try
             {
+                Commands.ToggleCommandState toggleCommandState;
                 var voiceCommand = (VoiceCommand)e.Data;
 
                 switch (voiceCommand.CommandType)
@@ -996,7 +1001,7 @@ namespace Aucovei.Device
 
                                 await this.ExecuteCommandAsync(Commands.SpeedSlow);
 
-                                this.SetControlModeonUi("voice", "Voice");
+                                this.UpdateControlModeonUi("voice", "Voice");
                             }
                             else
                             {
@@ -1005,7 +1010,7 @@ namespace Aucovei.Device
                                 await this.ExecuteCommandAsync(Commands.SpeedNormal);
                                 this.displayManager.ClearRow(1);
                                 this.displayManager.ClearRow(3);
-                                this.SetControlModeonUi(null, null);
+                                this.UpdateControlModeonUi(null, null);
                             }
 
                             this.Speak(response);
@@ -1052,7 +1057,7 @@ namespace Aucovei.Device
                     case VoiceCommandType.Tilt:
                     case VoiceCommandType.Pan:
                         response = "Moving camera ";
-                        if (Enum.TryParse(voiceCommand.Data, true, out camerairection))
+                        if (Enum.TryParse(voiceCommand.Data, true, out Commands.CameraDirection camerairection))
                         {
                             response = response + camerairection.ToString().ToLowerInvariant() + "...";
                             this.Speak(response);
@@ -1074,7 +1079,7 @@ namespace Aucovei.Device
                         }
 
                         response = "Moving ";
-                        if (Enum.TryParse(voiceCommand.Data, true, out drivingDirection))
+                        if (Enum.TryParse(voiceCommand.Data, true, out Commands.DrivingDirection drivingDirection))
                         {
                             response = response + drivingDirection.ToString().ToLowerInvariant() + "...";
                             this.Speak(response);
@@ -1128,9 +1133,9 @@ namespace Aucovei.Device
             this.ShowVoiceCommandPanel(false);
         }
 
-        private async void SetControlModeonUi(string mode, string displayName)
+        private async void UpdateControlModeonUi(string mode, string displayName)
         {
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, async () =>
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
             {
                 if (string.Equals(mode, "autonomous", StringComparison.OrdinalIgnoreCase))
                 {
@@ -1155,31 +1160,29 @@ namespace Aucovei.Device
             });
         }
 
-        private async void SetUiButtonStates(string contol, Commands.ToggleCommandState state)
+        private async void UpdateUiButtonStates(string contol, Commands.ToggleCommandState state)
         {
-            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, async () =>
+            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
             {
                 if (string.Equals(contol, "camera", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (state == Commands.ToggleCommandState.On)
-                    {
-                        this.CameraIndicator.Source = new BitmapImage(new Uri("ms-appx:///Assets/photocameraon.png", UriKind.RelativeOrAbsolute));
-                    }
-                    else
-                    {
-                        this.CameraIndicator.Source = new BitmapImage(new Uri("ms-appx:///Assets/photocameraoff.png", UriKind.RelativeOrAbsolute));
-                    }
+                    this.CameraIndicator.Source = state == Commands.ToggleCommandState.On ? new BitmapImage(new Uri("ms-appx:///Assets/photocameraon.png", UriKind.RelativeOrAbsolute)) : new BitmapImage(new Uri("ms-appx:///Assets/photocameraoff.png", UriKind.RelativeOrAbsolute));
                 }
                 else if (string.Equals(contol, "lights", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (state == Commands.ToggleCommandState.On)
-                    {
-                        this.CameraLight.Source = new BitmapImage(new Uri("ms-appx:///Assets/lighton.png", UriKind.RelativeOrAbsolute));
-                    }
-                    else
-                    {
-                        this.CameraLight.Source = new BitmapImage(new Uri("ms-appx:///Assets/lightoff.png", UriKind.RelativeOrAbsolute));
-                    }
+                    this.CameraLight.Source = state == Commands.ToggleCommandState.On
+                        ? new BitmapImage(new Uri("ms-appx:///Assets/lighton.png", UriKind.RelativeOrAbsolute))
+                        : new BitmapImage(new Uri("ms-appx:///Assets/lightoff.png", UriKind.RelativeOrAbsolute));
+                }
+                else if (string.Equals(contol, "gps", StringComparison.OrdinalIgnoreCase))
+                {
+                    this.GpsModeIcon.Source = state == Commands.ToggleCommandState.On ?
+                        new BitmapImage(new Uri("ms-appx:///Assets/locationon.png", UriKind.RelativeOrAbsolute)) :
+                        new BitmapImage(new Uri("ms-appx:///Assets/locationoff.png", UriKind.RelativeOrAbsolute));
+
+                    this.GpsModeValue.Text = state == Commands.ToggleCommandState.On
+                        ? "Gps Active"
+                        : "No Lock";
                 }
             });
         }
@@ -1190,6 +1193,7 @@ namespace Aucovei.Device
             this.arduino?.Dispose();
             this.displayManager?.Dispose();
             this.cameraLedPin?.Dispose();
+            this.gpsInformation?.Dispose();
         }
     }
 }

@@ -13,7 +13,7 @@ namespace Aucovei.Device
     {
         // The Chat Server's custom service Uuid: 34B1CF4D-1069-4AD6-89B6-E161D79BE4D8
         public static readonly Guid RfcommDeviceServiceUuid = Guid.Parse("34B1CF4D-1069-4AD6-89B6-E161D79BE4D9");
-       
+
         // The Id of the Service Name SDP attribute
         public const UInt16 SdpServiceNameAttributeId = 0x100;
 
@@ -32,5 +32,9 @@ namespace Aucovei.Device
         public const int TriggerPin = 16;
         public const int LedPin = 26;
         public const int EchoPin = 12;
+
+        public const double SafeDistanceCm = 50.0;
+
+        internal static int GpsBaudRate = 9600;
     }
 }

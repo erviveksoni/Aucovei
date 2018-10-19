@@ -95,10 +95,14 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Commands.cs" />
+    <Compile Include="Gps\GpsInformation.cs" />
+    <Compile Include="Gps\SatellitesInfoClass.cs" />
+    <Compile Include="Gps\PositionInfoClass.cs" />
+    <Compile Include="Gps\SatelliteInfoClass.cs" />
+    <Compile Include="Helper\Commands.cs" />
     <Compile Include="Configuration\ConfigurationFile.cs" />
     <Compile Include="Configuration\ConfigurationFileHelper.cs" />
-    <Compile Include="Constants.cs" />
+    <Compile Include="Helper\Constants.cs" />
     <Compile Include="Core\Definition.cs" />
     <Compile Include="Core\IComponetController.cs" />
     <Compile Include="Devices\Camera.cs" />
@@ -109,7 +113,7 @@
     <Compile Include="Display\SSD1603\Definition.cs" />
     <Compile Include="Display\SSD1603\SSD1603.cs" />
     <Compile Include="Display\SSD1603\SSD1603Controller.cs" />
-    <Compile Include="HCSR04.cs" />
+    <Compile Include="DistanceSensor\HCSR04.cs" />
     <Compile Include="Helper\DispatcherHelper.cs" />
     <Compile Include="Helper\Helpers.cs" />
     <Compile Include="Helper\TaskHelper.cs" />
@@ -149,7 +153,10 @@
     <Content Include="Assets\parked.png" />
     <Content Include="Assets\photocameraoff.png" />
     <Content Include="Assets\photocameraon.png" />
+    <Content Include="Assets\gpsoff.png" />
     <Content Include="Assets\speed.png" />
+    <Content Include="Assets\locationoff.png" />
+    <Content Include="Assets\locationon.png" />
     <Content Include="Assets\wifi-signal.png" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
