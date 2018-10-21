@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Aucovei.Device.Compass;
 using Aucovei.Device.Configuration;
 using Aucovei.Device.Devices;
 using Aucovei.Device.Gps;
@@ -59,6 +60,7 @@ namespace Aucovei.Device
         private GpsInformation gpsInformation;
         private DispatcherTimer gpsInfoTimer;
         private GpsInformation.GpsStatus lastGpsStatus;
+        private HMC5883L compass;
 
         public MainPage()
         {
@@ -169,6 +171,10 @@ namespace Aucovei.Device
 
                 this.WriteToOutputTextBlock("Initializing Gps...");
                 this.InitializeGps();
+
+                this.WriteToOutputTextBlock("Initializing Compass...");
+                this.compass = new HMC5883L(MeasurementMode.Continuous);
+                await this.compass.InitializeAsync();
 
                 this.WriteToOutputTextBlock("Initializing video Service...");
                 await this.InitializeVideoService();
@@ -347,6 +353,7 @@ namespace Aucovei.Device
             {
                 this.arduino.Read(response); // this funtion will read displayName from Arduino 
                 this.isArduinoSlaveSetup = true;
+                this.UpdateUiButtonStates("compass", Commands.ToggleCommandState.Off);
             }
             catch (Exception p)
             {
@@ -1184,6 +1191,11 @@ namespace Aucovei.Device
                         ? "Gps Active"
                         : "No Lock";
                 }
+                else if (string.Equals(contol, "compass", StringComparison.OrdinalIgnoreCase))
+                {
+                    double? d = this.compass?.GetHeadingInDegrees(this.compass?.ReadRaw());
+                    this.CompassModeValue.Text = d.HasValue ? Math.Round(d.Value, 2).ToString(CultureInfo.InvariantCulture) + "°" : "-";
+                }
             });
         }
 
@@ -1194,6 +1206,7 @@ namespace Aucovei.Device
             this.displayManager?.Dispose();
             this.cameraLedPin?.Dispose();
             this.gpsInformation?.Dispose();
+            this.compass?.Dispose();
         }
     }
 }

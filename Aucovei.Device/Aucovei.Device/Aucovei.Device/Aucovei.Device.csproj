@@ -95,6 +95,7 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Compass\HMC5883L.cs" />
     <Compile Include="Gps\GpsInformation.cs" />
     <Compile Include="Gps\SatellitesInfoClass.cs" />
     <Compile Include="Gps\PositionInfoClass.cs" />
@@ -144,6 +145,7 @@
     <Content Include="Assets\BootUp.mp3" />
     <Content Include="Assets\BootUp_fast.mp3" />
     <Content Include="Assets\CensorBeep.mp3" />
+    <Content Include="Assets\compass.png" />
     <Content Include="Assets\Default.mp3" />
     <Content Include="Assets\Disconnected.mp3" />
     <Content Include="Assets\Horn.mp3" />

@@ -38,13 +38,17 @@
                         <Image  Source="Assets/wifi-signal.png"></Image>
                         <TextBlock x:Name="WiifiInfoValue" Foreground="White" FontSize="10" HorizontalAlignment="Center" FontWeight="Normal">0.0.0.0</TextBlock>
                     </StackPanel>
-                    <StackPanel x:Name="GpsMode"  Grid.Row="0" Grid.Column="1" Width="70px" HorizontalAlignment="Center" Margin="5,5,5,5">
+                    <StackPanel x:Name="GpsMode"  Grid.Row="1" Grid.Column="0" Width="70px" HorizontalAlignment="Center" Margin="5,5,5,5">
                         <Image x:Name="GpsModeIcon" Source="Assets/locationoff.png"></Image>
                         <TextBlock x:Name="GpsModeValue" Foreground="White" FontSize="10" HorizontalAlignment="Center" FontWeight="Normal">No Lock</TextBlock>
                     </StackPanel>
-                    <StackPanel x:Name="ControlerMode"  Grid.Row="1" Grid.Column="0" Width="70px" HorizontalAlignment="Center" Margin="5,5,5,5">
+                    <StackPanel x:Name="ControlerMode"  Grid.Row="0" Grid.Column="1" Width="70px" HorizontalAlignment="Center" Margin="5,5,5,5">
                         <Image x:Name="ControlerModeIcon"  Source="Assets/parked.png"></Image>
                         <TextBlock x:Name="ControlerModeValue" Foreground="White" FontSize="10" HorizontalAlignment="Center" FontWeight="Normal">Parked</TextBlock>
+                    </StackPanel>
+                    <StackPanel x:Name="CompassMode"  Grid.Row="1" Grid.Column="1" Width="70px" HorizontalAlignment="Center" Margin="5,5,5,5">
+                        <Image x:Name="CompassModeIcon" Source="Assets/compass.png"></Image>
+                        <TextBlock x:Name="CompassModeValue" Foreground="White" FontSize="10" HorizontalAlignment="Center" FontWeight="Normal">0°</TextBlock>
                     </StackPanel>
                 </Grid>
                 <Grid Grid.Row="1" Background="Black" BorderBrush="#FF666666" BorderThickness="0">
