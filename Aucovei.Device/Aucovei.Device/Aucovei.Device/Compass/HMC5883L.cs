@@ -22,7 +22,6 @@
  */
 
 using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Windows.Devices.I2c;
 
@@ -115,8 +114,8 @@ namespace Aucovei.Device.Compass
         /// <returns>Angle</returns>
         public double GetHeadingInDegrees(HMC5883LData rawData)
         {
-            // double angle = Math.Atan2(rawData.Y_Axis, rawData.X_Axis) * (180 / Math.PI) + 180;
-            // return angle;
+            //double angle = Math.Atan2(rawData.Y_Axis, rawData.X_Axis) * (180 / Math.PI) + 180;
+            //return angle;
 
             // Calculate heading
             double heading = Math.Atan2(rawData.Y_Axis, rawData.X_Axis);
@@ -128,7 +127,7 @@ namespace Aucovei.Device.Compass
             // Formula: (deg + (min / 60.0)) / (180 / M_PI);
 
             //#define DEC_ANGLE 0.01190
-            double declinationAngle = (0.0 + (32.0 / 60.0)) / (180 / Math.PI);
+            double declinationAngle = (0.0 + (41.0 / 60.0)) / (180 / Math.PI);
             heading -= declinationAngle;
 
             // Correct for heading < 0deg and heading > 360deg
@@ -143,9 +142,7 @@ namespace Aucovei.Device.Compass
             }
 
             // Convert to degrees
-            double headingDegrees = heading * (180 / Math.PI);
-
-            Debug.WriteLine(headingDegrees);
+            double headingDegrees = WayPointNavigator.WayPointHelper.ToDegrees(heading);
 
             return headingDegrees;
         }

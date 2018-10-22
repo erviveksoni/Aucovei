@@ -28,7 +28,7 @@ namespace Aucovei.Device
 
         public const string I2CControllerName = "I2C1";
 
-        public const int SLAVEADDRESS = 0x40;
+ 
         public const int TriggerPin = 16;
         public const int LedPin = 26;
         public const int EchoPin = 12;

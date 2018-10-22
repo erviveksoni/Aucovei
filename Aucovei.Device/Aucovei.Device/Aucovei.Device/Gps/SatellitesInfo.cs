@@ -3,13 +3,13 @@ using System.Collections.ObjectModel;
 
 namespace Aucovei.Device.Gps
 {
-    public class SatellitesInfoClass
+    public class SatellitesInfo
     {
         public enum FixQuality { None, GpsFix, DGpsFix, PpsFix, RealTimeKinematic, FloatRTK };
         public enum FixType { None, TwoD, ThreeD }
 
-        public ObservableCollection<SatelliteInfoClass> SatelliteList
-            = new ObservableCollection<SatelliteInfoClass>();
+        public ObservableCollection<SatelliteInfo> SatelliteList
+            = new ObservableCollection<SatelliteInfo>();
 
         public int? TotalSatelliteCount { set; get; }
         public int? UsedSatelliteCount { get; set; }

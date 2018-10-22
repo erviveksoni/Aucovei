@@ -1,6 +1,6 @@
 ﻿namespace Aucovei.Device.Gps
 {
-    public class PositionInfoClass
+    public class PositionInfo
     {
         public double? Latitude { set; get; }
         public double? Longitude { set; get; }

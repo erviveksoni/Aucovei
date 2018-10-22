@@ -1,6 +1,6 @@
 ﻿namespace Aucovei.Device.Gps
 {
-    public class SatelliteInfoClass
+    public class SatelliteInfo
     {
         public int? Id { set; get; }
         public int? Elevation { set; get; }

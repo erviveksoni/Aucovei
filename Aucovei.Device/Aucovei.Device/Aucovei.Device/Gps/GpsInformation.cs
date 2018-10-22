@@ -15,17 +15,19 @@ namespace Aucovei.Device.Gps
     {
         #region ConnectingToModule
 
-        public string PortId { get; set; }
+        private string PortId { get; set; }
 
-        public string PortName { get; set; }
+        private string PortName { get; set; }
 
         public string LastErrorMessage { get; set; }
 
         public enum GpsStatus { None, Active, Void };
 
-        public GpsStatus CurrentGpsStatus { set; get; }
+        private GpsStatus CurrentGpsStatus { set; get; }
 
-        public PositionInfoClass PositionInfo { get; set; }
+        private PositionInfo PositionInfo { get; set; }
+
+        private SatellitesInfo SatellitesInfo { get; set; }
 
         private SerialDevice serialPort = null;
 
@@ -41,10 +43,16 @@ namespace Aucovei.Device.Gps
 
         private DispatcherTimer signalActivityTimer;
 
+        public delegate void GpsDataReceivedEventHandler(object sender, GpsDataReceivedEventArgs e);
+        public delegate void GpsStateChangedEventHandler(object sender, StateChangedEventArgs e);
+
+        public event GpsDataReceivedEventHandler DataReceivedEventHandler;
+        public event GpsStateChangedEventHandler StateChangedEventHandler;
+
         public GpsInformation(int baudRate)
         {
-            this.PositionInfo = new PositionInfoClass();
-            this.SatellitesInfo = new SatellitesInfoClass();
+            this.PositionInfo = new PositionInfo();
+            this.SatellitesInfo = new SatellitesInfo();
 
             this.ConnectToUARTAsync(baudRate);
         }
@@ -158,9 +166,31 @@ namespace Aucovei.Device.Gps
 
         private void ResetGpsStats()
         {
-            this.CurrentGpsStatus = GpsStatus.None;
-            this.PositionInfo = new PositionInfoClass();
-            this.SatellitesInfo = new SatellitesInfoClass();
+            this.PositionInfo = new PositionInfo();
+            this.SatellitesInfo = new SatellitesInfo();
+
+            if (this.CurrentGpsStatus != GpsStatus.None)
+            {
+                this.CurrentGpsStatus = GpsStatus.None;
+                this.OnStateChanged(this.CurrentGpsStatus);
+            }
+        }
+
+        private void OnDataReceived(PositionInfo positionInfo, SatellitesInfo satellitesInfoClass)
+        {
+            this.DataReceivedEventHandler?.Invoke(this, new GpsDataReceivedEventArgs()
+            {
+                positionInfo = positionInfo,
+                satellitesInfo = satellitesInfoClass
+            });
+        }
+
+        private void OnStateChanged(GpsStatus status)
+        {
+            this.StateChangedEventHandler?.Invoke(this, new StateChangedEventArgs()
+            {
+                State = status
+            });
         }
 
         private void ReadGpsMessage()
@@ -247,8 +277,6 @@ namespace Aucovei.Device.Gps
 
         #endregion
 
-        public SatellitesInfoClass SatellitesInfo { get; set; }
-
         public async void SendMessageToModule(string msg)
         {
             this.WriteAsync(msg);
@@ -265,7 +293,6 @@ namespace Aucovei.Device.Gps
                 }
 
                 string[] data = msg.Split(',');
-
 
                 switch (data[0].Substring(3, 3))
                 {
@@ -290,13 +317,28 @@ namespace Aucovei.Device.Gps
                         switch (data[2])
                         {
                             case "A":
-                                this.CurrentGpsStatus = GpsStatus.Active;
+                                if (this.CurrentGpsStatus != GpsStatus.Active)
+                                {
+                                    this.CurrentGpsStatus = GpsStatus.Active;
+                                    this.OnStateChanged(this.CurrentGpsStatus);
+                                }
+
                                 break;
                             case "V":
-                                this.CurrentGpsStatus = GpsStatus.Void;
+                                if (this.CurrentGpsStatus != GpsStatus.Void)
+                                {
+                                    this.CurrentGpsStatus = GpsStatus.Void;
+                                    this.OnStateChanged(this.CurrentGpsStatus);
+                                }
+
                                 break;
                             default:
-                                this.CurrentGpsStatus = GpsStatus.None;
+                                if (this.CurrentGpsStatus != GpsStatus.None)
+                                {
+                                    this.CurrentGpsStatus = GpsStatus.None;
+                                    this.OnStateChanged(this.CurrentGpsStatus);
+                                }
+
                                 break;
                         }
 
@@ -336,22 +378,22 @@ namespace Aucovei.Device.Gps
                             switch (Convert.ToInt32(data[6]))
                             {
                                 case 0:
-                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfoClass.FixQuality.None;
+                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfo.FixQuality.None;
                                     break;
                                 case 1:
-                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfoClass.FixQuality.GpsFix;
+                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfo.FixQuality.GpsFix;
                                     break;
                                 case 2:
-                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfoClass.FixQuality.DGpsFix;
+                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfo.FixQuality.DGpsFix;
                                     break;
                                 case 3:
-                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfoClass.FixQuality.PpsFix;
+                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfo.FixQuality.PpsFix;
                                     break;
                                 case 4:
-                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfoClass.FixQuality.RealTimeKinematic;
+                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfo.FixQuality.RealTimeKinematic;
                                     break;
                                 case 5:
-                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfoClass.FixQuality.FloatRTK;
+                                    this.SatellitesInfo.CurrentFixQuality = SatellitesInfo.FixQuality.FloatRTK;
                                     break;
 
                             }
@@ -372,12 +414,12 @@ namespace Aucovei.Device.Gps
                     case "GSV":
                         this.SatellitesInfo.TotalSatelliteCount = (data[3] != "") ? Convert.ToInt32(data[3]) : (int?)null;
 
-                        var s = new List<SatelliteInfoClass>();
+                        var s = new List<SatelliteInfo>();
 
                         // 4,8,12,16 is id 5,9,13,17 is elevation and so on
                         for (int i = 4; i <= 16; i += 4)
                         {
-                            s.Add(new SatelliteInfoClass()
+                            s.Add(new SatelliteInfo()
                             {
                                 Id = (data[i] != "") ? Convert.ToInt32(data[i]) : (int?)null,
                                 Elevation = (data[i + 1] != "") ? Convert.ToInt32(data[i + 1]) : (int?)null,
@@ -390,11 +432,11 @@ namespace Aucovei.Device.Gps
                         // update into list, if dont have, add them
                         if (this.SatellitesInfo.SatelliteList.Count > 0)
                         {
-                            foreach (SatelliteInfoClass new_s in s)
+                            foreach (SatelliteInfo new_s in s)
                             {
                                 bool updated = false;
 
-                                foreach (SatelliteInfoClass sl in this.SatellitesInfo.SatelliteList)
+                                foreach (SatelliteInfo sl in this.SatellitesInfo.SatelliteList)
                                 {
                                     if (sl.Id == new_s.Id)
                                     {
@@ -410,7 +452,7 @@ namespace Aucovei.Device.Gps
 
                                 if (!updated) // add new if not updated, after looped finish each sattelites
                                 {
-                                    this.SatellitesInfo.SatelliteList.Add(new SatelliteInfoClass
+                                    this.SatellitesInfo.SatelliteList.Add(new SatelliteInfo
                                     {
                                         Id = new_s.Id,
                                         Elevation = new_s.Elevation,
@@ -449,19 +491,19 @@ namespace Aucovei.Device.Gps
                             switch (Convert.ToInt32(data[2]))
                             {
                                 case 1:
-                                    this.SatellitesInfo.CurrentFixType = SatellitesInfoClass.FixType.None;
+                                    this.SatellitesInfo.CurrentFixType = SatellitesInfo.FixType.None;
                                     break;
                                 case 2:
-                                    this.SatellitesInfo.CurrentFixType = SatellitesInfoClass.FixType.TwoD;
+                                    this.SatellitesInfo.CurrentFixType = SatellitesInfo.FixType.TwoD;
                                     break;
                                 case 3:
-                                    this.SatellitesInfo.CurrentFixType = SatellitesInfoClass.FixType.ThreeD;
+                                    this.SatellitesInfo.CurrentFixType = SatellitesInfo.FixType.ThreeD;
                                     break;
                             }
                         }
 
                         // 12 spaces for which satellite used for fix
-                        foreach (SatelliteInfoClass satellites in this.SatellitesInfo.SatelliteList)
+                        foreach (SatelliteInfo satellites in this.SatellitesInfo.SatelliteList)
                         {
                             for (int i = 3; i < 15; i++)
                             {
@@ -495,6 +537,8 @@ namespace Aucovei.Device.Gps
 
                         break;
                 }
+
+                this.OnDataReceived(this.PositionInfo, this.SatellitesInfo);
             }
             catch (Exception ex)
             {
@@ -539,5 +583,17 @@ namespace Aucovei.Device.Gps
         }
 
         #endregion
+
+        public class GpsDataReceivedEventArgs : EventArgs
+        {
+            public PositionInfo positionInfo;
+
+            public SatellitesInfo satellitesInfo;
+        }
+
+        public class StateChangedEventArgs : EventArgs
+        {
+            public GpsStatus State;
+        }
     }
 }
