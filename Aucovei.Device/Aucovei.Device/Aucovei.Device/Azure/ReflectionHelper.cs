@@ -8,7 +8,7 @@ using System.Reflection;
 using Microsoft.CSharp.RuntimeBinder;
 using D = Dynamitey;
 
-namespace Aucovei.Device
+namespace Aucovei.Device.Azure
 {
     /// <summary>
     /// Methods related to reflection.

@@ -2,13 +2,14 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Aucovei.Device.RfcommService;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Client.Exceptions;
 using Microsoft.IoT.DeviceCore;
 
 namespace Aucovei.Device.Azure
 {
-    public class CloudDataProcessor : IDisposable
+    public class CloudDataProcessor : BaseService, IDisposable
     {
         private readonly IDevice _device;
         private DeviceClient deviceClient;
@@ -29,7 +30,7 @@ namespace Aucovei.Device.Azure
         public async Task InitializeAsync()
         {
             this.tokenSource = new CancellationTokenSource();
-            this.deviceClient = DeviceClient.CreateFromConnectionString(this.GetConnectionString());
+            this.deviceClient = DeviceClient.CreateFromConnectionString(this.GetConnectionString(), TransportType.Amqp);
 
             this.StartReceiveLoopAsync(this.tokenSource.Token);
         }
@@ -48,7 +49,7 @@ namespace Aucovei.Device.Azure
                     exception = null;
 
                     // Pause before running through the receive loop
-                    await Task.Delay(TimeSpan.FromSeconds(10), token);
+                    await Task.Delay(TimeSpan.FromSeconds(1), token);
 
                     try
                     {
@@ -61,7 +62,7 @@ namespace Aucovei.Device.Azure
                         }
 
                         processingResult =
-                        await this.HandleCommandAsync(command);
+                            await this.HandleCommandAsync(command);
 
                         switch (processingResult)
                         {
@@ -100,9 +101,16 @@ namespace Aucovei.Device.Azure
             }
             catch (Exception ex)
             {
-                // Logger<>.LogError("Unexpected Exception starting device receive loop: {0}", ex.ToString());
+                NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
+                {
+                    NotificationType = NotificationType.Console,
+                    Data = string.Format("Unexpected Exception starting device receive loop: {0}", ex.ToString())
+                };
+
+                this.NotifyUIEvent(notifyEventArgs);
             }
         }
+
 
         private async Task SignalAbandonedCommand(DeserializableCommand command)
         {
@@ -121,12 +129,17 @@ namespace Aucovei.Device.Azure
             }
             catch (Exception ex)
             {
-                //_logger.LogError(
-                //    "{0}{0}*** Exception: Abandon Command ***{0}{0}Command Name: {1}{0}Command: {2}{0}Exception: {3}{0}{0}",
-                //    Console.Out.NewLine,
-                //    command.CommandName,
-                //    command.Command,
-                //    ex);
+                NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
+                {
+                    NotificationType = NotificationType.Console,
+                    Data = string.Format("{0}{0}*** Exception: Abandon Command ***{0}{0}Command Name: {1}{0}Command: {2}{0}Exception: {3}{0}{0}",
+                        Console.Out.NewLine,
+                        command.CommandName,
+                        command.Command,
+                        ex)
+                };
+
+                this.NotifyUIEvent(notifyEventArgs);
             }
 
         }
@@ -148,12 +161,17 @@ namespace Aucovei.Device.Azure
             }
             catch (Exception ex)
             {
-                //_logger.LogError(
-                //    "{0}{0}*** Exception: Complete Command ***{0}{0}Command Name: {1}{0}Command: {2}{0}Exception: {3}{0}{0}",
-                //    Console.Out.NewLine,
-                //    command.CommandName,
-                //    command.Command,
-                //    ex);
+                NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
+                {
+                    NotificationType = NotificationType.Console,
+                    Data = string.Format("{0}{0}*** Exception: Complete Command ***{0}{0}Command Name: {1}{0}Command: {2}{0}Exception: {3}{0}{0}",
+                        Console.Out.NewLine,
+                        command.CommandName,
+                        command.Command,
+                        ex)
+                };
+
+                this.NotifyUIEvent(notifyEventArgs);
             }
         }
 
@@ -174,12 +192,17 @@ namespace Aucovei.Device.Azure
             }
             catch (Exception ex)
             {
-                //_logger.LogError(
-                //    "{0}{0}*** Exception: Reject Command ***{0}{0}Command Name: {1}{0}Command: {2}{0}Exception: {3}{0}{0}",
-                //    Console.Out.NewLine,
-                //    command.CommandName,
-                //    command.Command,
-                //    ex);
+                NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
+                {
+                    NotificationType = NotificationType.Console,
+                    Data = string.Format("{0}{0}*** Exception: Reject Command ***{0}{0}Command Name: {1}{0}Command: {2}{0}Exception: {3}{0}{0}",
+                        Console.Out.NewLine,
+                        command.CommandName,
+                        command.Command,
+                        ex)
+                };
+
+                this.NotifyUIEvent(notifyEventArgs);
             }
         }
 
@@ -198,10 +221,15 @@ namespace Aucovei.Device.Azure
 
             if (exp != null)
             {
-                //_logger.LogError(
-                //    "{0}{0}*** Exception: ReceiveAsync ***{0}{0}{1}{0}{0}",
-                //    Console.Out.NewLine,
-                //    exp);
+                NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
+                {
+                    NotificationType = NotificationType.Console,
+                    Data = string.Format("{0}{0}*** Exception: ReceiveAsync ***{0}{0}{1}{0}{0}",
+                       Console.Out.NewLine,
+                        exp)
+                };
+
+                this.NotifyUIEvent(notifyEventArgs);
 
                 if (message != null)
                 {
@@ -219,50 +247,272 @@ namespace Aucovei.Device.Azure
 
         private async Task<CommandProcessingResult> HandleCommandAsync(DeserializableCommand deserializableCommand)
         {
+            var notifyEventArgs = new NotifyUIEventArgs()
+            {
+                NotificationType = NotificationType.Console,
+                Data = $"Received cloud command: {deserializableCommand.CommandName}"
+            };
+
+            this.NotifyUIEvent(notifyEventArgs);
+
             if (deserializableCommand.CommandName == "DemoRun")
             {
-                var command = deserializableCommand.Command;
-
-                try
+                return await this.ExecuteDemoCommandAsync(deserializableCommand);
+            }
+            else if (deserializableCommand.CommandName == "SendWaypoints")
+            {
+                return await this.ExecuteSendWaypointsCommandAsync(deserializableCommand);
+            }
+            else if (deserializableCommand.CommandName == "SetLights")
+            {
+                return await this.ExecuteSetLightsCommandAsync(deserializableCommand);
+            }
+            else if (deserializableCommand.CommandName == "SendBuzzer")
+            {
+                return await this.ExecuteSendBuzzerCommandAsync(deserializableCommand);
+            }
+            else if (deserializableCommand.CommandName == "EmergencyStop")
+            {
+                return await this.ExecuteEmergencyStopCommandAsync(deserializableCommand);
+            }
+            else if (deserializableCommand.CommandName == "StartTelemetry")
+            {
+                return await this.ExecuteStartStopTelemetryCommandAsync(true);
+            }
+            else if (deserializableCommand.CommandName == "StopTelemetry")
+            {
+                return await this.ExecuteStartStopTelemetryCommandAsync(false);
+            }
+            else
+            {
+                notifyEventArgs = new NotifyUIEventArgs()
                 {
-                    dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
-                    if (parameters != null)
-                    {
-                        //dynamic statusstring = ReflectionHelper.GetNamedPropertyValue(
-                        //    parameters,
-                        //    "data",
-                        //    usesCaseSensitivePropertyNameMatch: true,
-                        //    exceptionThrownIfNoMatch: true);
+                    NotificationType = NotificationType.Console,
+                    Data = $"Command not registered in the system: {deserializableCommand.CommandName}"
+                };
 
-                        dynamic statusstring = null;
-
-                        await this.commandProcessor.ExecuteCommandAsync(statusstring);
-
-                        int count = 0;
-                        if (statusstring != null &&
-                            int.TryParse(statusstring.ToString(), out count))
-                        {
-                            return CommandProcessingResult.Success;
-                        }
-                        else
-                        {
-                            // setPointTempDynamic is a null reference.
-                            return CommandProcessingResult.CannotComplete;
-                        }
-                    }
-                    else
-                    {
-                        // parameters is a null reference.
-                        return CommandProcessingResult.CannotComplete;
-                    }
-                }
-                catch (Exception)
-                {
-                    return CommandProcessingResult.RetryLater;
-                }
+                this.NotifyUIEvent(notifyEventArgs);
             }
 
             return CommandProcessingResult.CannotComplete;
+        }
+
+        private async Task<CommandProcessingResult> ExecuteDemoCommandAsync(DeserializableCommand deserializableCommand)
+        {
+            var command = deserializableCommand.Command;
+
+            try
+            {
+                dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
+                if (parameters != null)
+                {
+                    dynamic statusstring = ReflectionHelper.GetNamedPropertyValue(
+                        parameters,
+                        "data",
+                        usesCaseSensitivePropertyNameMatch: true,
+                        exceptionThrownIfNoMatch: true);
+
+                    await this.commandProcessor.ExecuteCommandAsync(statusstring);
+
+                    int count = 0;
+                    if (statusstring != null &&
+                        int.TryParse(statusstring.ToString(), out count))
+                    {
+                        return CommandProcessingResult.Success;
+                    }
+                    else
+                    {
+                        // setPointTempDynamic is a null reference.
+                        return CommandProcessingResult.CannotComplete;
+                    }
+                }
+                else
+                {
+                    // parameters is a null reference.
+                    return CommandProcessingResult.CannotComplete;
+                }
+            }
+            catch (Exception)
+            {
+                return CommandProcessingResult.RetryLater;
+            }
+        }
+
+        private async Task<CommandProcessingResult> ExecuteSendWaypointsCommandAsync(DeserializableCommand deserializableCommand)
+        {
+            var command = deserializableCommand.Command;
+
+            try
+            {
+                dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
+                if (parameters != null)
+                {
+                    dynamic statusstring = ReflectionHelper.GetNamedPropertyValue(
+                        parameters,
+                        "data",
+                        usesCaseSensitivePropertyNameMatch: true,
+                        exceptionThrownIfNoMatch: true);
+
+                    await this.commandProcessor.ExecuteCommandAsync(statusstring);
+
+                    int count = 0;
+                    if (statusstring != null &&
+                        int.TryParse(statusstring.ToString(), out count))
+                    {
+                        return CommandProcessingResult.Success;
+                    }
+                    else
+                    {
+                        // setPointTempDynamic is a null reference.
+                        return CommandProcessingResult.CannotComplete;
+                    }
+                }
+                else
+                {
+                    // parameters is a null reference.
+                    return CommandProcessingResult.CannotComplete;
+                }
+            }
+            catch (Exception)
+            {
+                return CommandProcessingResult.RetryLater;
+            }
+        }
+
+        private async Task<CommandProcessingResult> ExecuteSetLightsCommandAsync(DeserializableCommand deserializableCommand)
+        {
+            var command = deserializableCommand.Command;
+
+            try
+            {
+                dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
+                if (parameters != null)
+                {
+                    dynamic statusstring = ReflectionHelper.GetNamedPropertyValue(
+                        parameters,
+                        "data",
+                        usesCaseSensitivePropertyNameMatch: true,
+                        exceptionThrownIfNoMatch: true);
+
+                    await this.commandProcessor.ExecuteCommandAsync(statusstring);
+
+                    int count = 0;
+                    if (statusstring != null &&
+                        int.TryParse(statusstring.ToString(), out count))
+                    {
+                        return CommandProcessingResult.Success;
+                    }
+                    else
+                    {
+                        // setPointTempDynamic is a null reference.
+                        return CommandProcessingResult.CannotComplete;
+                    }
+                }
+                else
+                {
+                    // parameters is a null reference.
+                    return CommandProcessingResult.CannotComplete;
+                }
+            }
+            catch (Exception)
+            {
+                return CommandProcessingResult.RetryLater;
+            }
+        }
+
+        private async Task<CommandProcessingResult> ExecuteSendBuzzerCommandAsync(DeserializableCommand deserializableCommand)
+        {
+            var command = deserializableCommand.Command;
+
+            try
+            {
+                dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
+                if (parameters != null)
+                {
+                    dynamic statusstring = ReflectionHelper.GetNamedPropertyValue(
+                        parameters,
+                        "data",
+                        usesCaseSensitivePropertyNameMatch: true,
+                        exceptionThrownIfNoMatch: true);
+
+                    await this.commandProcessor.ExecuteCommandAsync(statusstring);
+
+                    int count = 0;
+                    if (statusstring != null &&
+                        int.TryParse(statusstring.ToString(), out count))
+                    {
+                        return CommandProcessingResult.Success;
+                    }
+                    else
+                    {
+                        // setPointTempDynamic is a null reference.
+                        return CommandProcessingResult.CannotComplete;
+                    }
+                }
+                else
+                {
+                    // parameters is a null reference.
+                    return CommandProcessingResult.CannotComplete;
+                }
+            }
+            catch (Exception)
+            {
+                return CommandProcessingResult.RetryLater;
+            }
+        }
+
+        private async Task<CommandProcessingResult> ExecuteEmergencyStopCommandAsync(DeserializableCommand deserializableCommand)
+        {
+            var command = deserializableCommand.Command;
+
+            try
+            {
+                dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
+                if (parameters != null)
+                {
+                    dynamic statusstring = ReflectionHelper.GetNamedPropertyValue(
+                        parameters,
+                        "data",
+                        usesCaseSensitivePropertyNameMatch: true,
+                        exceptionThrownIfNoMatch: true);
+
+                    await this.commandProcessor.ExecuteCommandAsync(statusstring);
+
+                    int count = 0;
+                    if (statusstring != null &&
+                        int.TryParse(statusstring.ToString(), out count))
+                    {
+                        return CommandProcessingResult.Success;
+                    }
+                    else
+                    {
+                        // setPointTempDynamic is a null reference.
+                        return CommandProcessingResult.CannotComplete;
+                    }
+                }
+                else
+                {
+                    // parameters is a null reference.
+                    return CommandProcessingResult.CannotComplete;
+                }
+            }
+            catch (Exception)
+            {
+                return CommandProcessingResult.RetryLater;
+            }
+        }
+
+        private async Task<CommandProcessingResult> ExecuteStartStopTelemetryCommandAsync(bool startTelemetry)
+        {
+            try
+            {
+                await Task.FromResult(1);
+                return CommandProcessingResult.Success;
+            }
+            catch (Exception)
+            {
+                return CommandProcessingResult.RetryLater;
+            }
         }
 
         /// <summary>
@@ -278,11 +528,6 @@ namespace Aucovei.Device.Azure
 
             var authMethod = new DeviceAuthenticationWithRegistrySymmetricKey(deviceID, key);
             return Microsoft.Azure.Devices.Client.IotHubConnectionStringBuilder.Create(hostName, authMethod).ToString();
-        }
-
-        private async Task CloseAsync()
-        {
-            await this.deviceClient.CloseAsync();
         }
 
         /// <summary>

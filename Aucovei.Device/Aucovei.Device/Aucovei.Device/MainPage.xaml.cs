@@ -47,7 +47,6 @@ namespace Aucovei.Device
         private GpsInformation.GpsStatus currentGpsStatus;
         private HMC5883L compass;
         private CommandProcessor.CommandProcessor commandProcessor;
-        private CloudDataProcessor cloudDataProcessor;
 
         public MainPage()
         {
@@ -165,8 +164,9 @@ namespace Aucovei.Device
                 wayPointNavigator.NotifyUIEventHandler += this.NotifyUIEventHandler;
 
                 this.WriteToOutputTextBlock("Initializing cloud device connection...");
-                this.cloudDataProcessor = new CloudDataProcessor(this.commandProcessor, wayPointNavigator);
-                await this.cloudDataProcessor.InitializeAsync();
+                var cloudDataProcessor = new CloudDataProcessor(this.commandProcessor, wayPointNavigator);
+                cloudDataProcessor.NotifyUIEventHandler += this.NotifyUIEventHandler;
+                await cloudDataProcessor.InitializeAsync();
 
                 this.displayManager.ClearDisplay();
                 this.displayManager.AppendText("Initialization complete!", 0, 0);

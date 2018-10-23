@@ -33,7 +33,7 @@ namespace Aucovei.Device
             this.UnhandledException += App_UnhandledException;
         }
 
-        private void App_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private void App_UnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             Windows.UI.Popups.MessageDialog msg = new Windows.UI.Popups.MessageDialog(e.Message);
             msg.ShowAsync().GetAwaiter().GetResult(); // this will show error message(if Any)
