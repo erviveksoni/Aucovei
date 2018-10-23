@@ -96,6 +96,11 @@
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
     <Compile Include="Arduino\Arduino.cs" />
+    <Compile Include="Azure\CloudDataProcessor.cs" />
+    <Compile Include="Azure\DeserializableCommand.cs" />
+    <Compile Include="Azure\JsonSerialize.cs" />
+    <Compile Include="Azure\WireCommandSchemaHelper.cs" />
+    <Compile Include="CommandProcessor\CommandProcessor.cs" />
     <Compile Include="Compass\HMC5883L.cs" />
     <Compile Include="Gps\GpsInformation.cs" />
     <Compile Include="Gps\SatellitesInfo.cs" />
@@ -122,6 +127,7 @@
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="RfcommService\BaseService.cs" />
     <Compile Include="RfcommService\RfcommServiceManager.cs" />
     <Compile Include="Servo\PanTiltServo.cs" />
     <Compile Include="PlaybackService\PlaybackService.cs" />
@@ -153,6 +159,7 @@
     <Content Include="Assets\compass.png" />
     <Content Include="Assets\Default.mp3" />
     <Content Include="Assets\Disconnected.mp3" />
+    <Content Include="Assets\navigation.png" />
     <Content Include="Assets\Horn.mp3" />
     <Content Include="Assets\lightoff.png" />
     <Content Include="Assets\lighton.png" />
@@ -192,6 +199,12 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Dynamitey">
+      <Version>2.0.9.136</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Azure.Devices.Client">
+      <Version>1.18.1</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.IoT.DeviceCore">
       <Version>1.0.8</Version>
     </PackageReference>

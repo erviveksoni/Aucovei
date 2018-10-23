@@ -1,25 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
-
+using Aucovei.Device.Azure;
 using Aucovei.Device.Compass;
 using Aucovei.Device.Configuration;
 using Aucovei.Device.Devices;
 using Aucovei.Device.Gps;
-using Aucovei.Device.Helper;
 using Aucovei.Device.RfcommService;
 using Aucovei.Device.Services;
-using Aucovei.Device.WayPointNavigator;
 using Aucovei.Device.Web;
-
-using Windows.Devices.Bluetooth;
 using Windows.Devices.Gpio;
-using Windows.Networking.Sockets;
-using Windows.Storage.Streams;
 using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
@@ -37,7 +29,6 @@ namespace Aucovei.Device
     {
         private Arduino.Arduino arduino;
         private DisplayManager displayManager;
-        private int distanceCounter = 10;
         private HttpServer httpServer;
         private bool isArduinoSlaveSetup;
         private bool isRfcommSetup;
@@ -46,22 +37,17 @@ namespace Aucovei.Device
         private bool isVoiceModeActive = false;
         private PanTiltServo panTiltServo;
         private RfcommServiceManager rfcommProvider;
-        private StreamSocket socket;
         private HCSR04 ultrasonicsensor;
-        private DispatcherTimer ultrasonictimer;
         private DispatcherTimer compasstimer;
-        private bool wasObstacleDetected;
-        private DataWriter writer;
         private double speedInmPerSecond = 0;
         private PlaybackService playbackService;
-        private GpioController gpio;
-        private GpioPin cameraLedPin;
         private VoiceCommandController voiceController;
         private DispatcherTimer voiceCommandHideTimer;
         private GpsInformation gpsInformation;
-        private PositionInfo currentGpsPosition;
         private GpsInformation.GpsStatus currentGpsStatus;
         private HMC5883L compass;
+        private CommandProcessor.CommandProcessor commandProcessor;
+        private CloudDataProcessor cloudDataProcessor;
 
         public MainPage()
         {
@@ -106,8 +92,8 @@ namespace Aucovei.Device
         {
             try
             {
-                this.gpio = await GpioController.GetDefaultAsync();
-                if (this.gpio == null)
+                var gpio = await GpioController.GetDefaultAsync();
+                if (gpio == null)
                 {
                     throw new IOException("GPIO interface not found");
                 }
@@ -117,11 +103,6 @@ namespace Aucovei.Device
                 this.WriteToOutputTextBlock("Setting up distance sensor...");
                 this.ultrasonicsensor = new HCSR04(Constants.TriggerPin, Constants.EchoPin);
 
-                this.WriteToOutputTextBlock("Setting up camera...");
-                this.cameraLedPin = this.gpio.OpenPin(Constants.LedPin);
-                this.cameraLedPin.Write(GpioPinValue.Low);
-                this.cameraLedPin.SetDriveMode(GpioPinDriveMode.Output);
-
                 this.Speak("Initializing system");
                 this.displayManager = new DisplayManager();
                 await this.displayManager.Init();
@@ -130,31 +111,6 @@ namespace Aucovei.Device
                 this.displayManager.ClearDisplay();
 
                 this.displayManager.AppendText("Initializing system...", 0, 0);
-                this.displayManager.AppendText(">Connecting slave...", 5, 1);
-
-                await this.InitializeArduinoAsync();
-                while (!this.isArduinoSlaveSetup)
-                {
-                    this.WriteToOutputTextBlock("Searching I2C device...");
-                    this.displayManager.AppendText(">Searching...", 10, 2);
-                    await Task.Delay(2000);
-                }
-
-                this.WriteToOutputTextBlock("Connected to I2C device...");
-                this.displayManager.AppendText(">>Done...", 10, 2);
-
-                this.WriteToOutputTextBlock("Initializing Rfcomm Service...");
-                this.displayManager.AppendText(">Starting Rfcomm Svc...", 5, 3);
-
-                this.InitializeRfcommServerAsync();
-                while (!this.isRfcommSetup)
-                {
-                    await Task.Delay(2000);
-                }
-
-                this.displayManager.AppendText(">Started Rfcomm Svc...", 5, 3);
-
-                await this.panTiltServo.Center();
 
                 this.WriteToOutputTextBlock("Initializing Gps...");
                 this.InitializeGps();
@@ -167,19 +123,58 @@ namespace Aucovei.Device
                 this.compasstimer.Tick += this.Compasstimer_Tick;
                 this.compasstimer.Start();
 
-                this.WriteToOutputTextBlock("Initializing video Service...");
+                this.displayManager.AppendText(">Connecting slave...", 5, 1);
+                await this.InitializeArduinoAsync();
+                while (!this.isArduinoSlaveSetup)
+                {
+                    this.WriteToOutputTextBlock("Searching I2C device...");
+                    this.displayManager.AppendText(">Searching...", 10, 2);
+                    await Task.Delay(2000);
+                }
+                this.WriteToOutputTextBlock("Connected to I2C device...");
+                this.displayManager.AppendText(">>Done...", 10, 2);
+
+                this.WriteToOutputTextBlock("Initializing video service...");
                 await this.InitializeVideoService();
+
+                this.WriteToOutputTextBlock("Initializing command processor...");
+                this.commandProcessor = new CommandProcessor.CommandProcessor(
+                    this.arduino,
+                    this.displayManager,
+                    this.playbackService,
+                    this.httpServer,
+                    this.panTiltServo,
+                    this.ultrasonicsensor);
+                this.commandProcessor.NotifyUIEventHandler += this.NotifyUIEventHandler;
+                await this.commandProcessor.InitializeAsync();
+
+                this.WriteToOutputTextBlock("Initializing Rfcomm Service...");
+                this.displayManager.AppendText(">Starting Rfcomm Svc...", 5, 3);
+                this.InitializeRfcommServerAsync();
+                while (!this.isRfcommSetup)
+                {
+                    await Task.Delay(2000);
+                }
+                this.displayManager.AppendText(">Started Rfcomm Svc...", 5, 3);
 
                 this.WriteToOutputTextBlock("Initializing voice commands...");
                 this.voiceController.Initialize();
+
+                this.WriteToOutputTextBlock("Initializing waypoint navigator...");
+                WayPointNavigator.WayPointNavigator wayPointNavigator = new WayPointNavigator.WayPointNavigator(this.gpsInformation, this.compass, this.commandProcessor);
+
+                this.WriteToOutputTextBlock("Initializing cloud device connection...");
+                this.cloudDataProcessor = new CloudDataProcessor(this.commandProcessor, wayPointNavigator);
+                await this.cloudDataProcessor.InitializeAsync();
 
                 this.displayManager.ClearDisplay();
                 this.displayManager.AppendText("Initialization complete!", 0, 0);
                 await Task.Delay(1000);
                 this.displayManager.ClearDisplay();
 
-                this.DisplayNetworkInfo();
+                await this.panTiltServo.Center();
 
+                this.DisplayNetworkInfo();
                 this.displayManager.AppendImage(DisplayImages.BluetoothDisconnected, 0, 1);
 
                 this.WriteToOutputTextBlock("Initialization complete...");
@@ -242,31 +237,11 @@ namespace Aucovei.Device
             this.UpdateDisplayWithSpeed();
         }
 
-        private void InitializeDistanceSensor()
-        {
-            if (this.ultrasonictimer != null &&
-                this.ultrasonictimer.IsEnabled)
-            {
-                this.ultrasonictimer.Stop();
-            }
-
-            this.isAutodriveTimerActive = true;
-            this.ultrasonictimer = new DispatcherTimer();
-            this.ultrasonictimer.Tick += this.Ultrasonictimer_Tick;
-            this.ultrasonictimer.Interval = new TimeSpan(0, 0, 0, 0, 200);
-        }
-
         private void InitializeGps()
         {
             this.gpsInformation = new GpsInformation(Constants.GpsBaudRate);
             this.currentGpsStatus = GpsInformation.GpsStatus.None;
             this.gpsInformation.StateChangedEventHandler += this.GpsInformation_StateChangedEventHandler;
-            this.gpsInformation.DataReceivedEventHandler += this.GpsInformation_DataReceivedEventHandler;
-        }
-
-        private void GpsInformation_DataReceivedEventHandler(object sender, GpsInformation.GpsDataReceivedEventArgs e)
-        {
-            this.currentGpsPosition = e.positionInfo;
         }
 
         private void GpsInformation_StateChangedEventHandler(object sender, GpsInformation.StateChangedEventArgs e)
@@ -302,9 +277,9 @@ namespace Aucovei.Device
         {
             try
             {
-                this.rfcommProvider = new RfcommServiceManager();
+                this.rfcommProvider = new RfcommServiceManager(this.playbackService, this.displayManager, this.commandProcessor, this.httpServer);
                 await this.rfcommProvider.InitializeRfcommServer();
-                this.rfcommProvider.ConnectionReceivedEventHandler += this.RfcommProvider_ConnectionReceivedEventHandler;
+                this.rfcommProvider.NotifyUIEventHandler += this.NotifyUIEventHandler;
                 this.isRfcommSetup = true;
             }
             catch (Exception ex) when ((uint)ex.HResult == 0x800710DF)
@@ -319,412 +294,6 @@ namespace Aucovei.Device
         private void Compasstimer_Tick(object sender, object e)
         {
             this.UpdateUiButtonStates("compass", Commands.ToggleCommandState.On);
-        }
-
-        private async void Ultrasonictimer_Tick(object sender, object e)
-        {
-            try
-            {
-                // for additional safety against timer misbehaviour
-                if (!this.isAutodriveTimerActive)
-                {
-                    return;
-                }
-
-                var distance = this.ultrasonicsensor.GetDistance(1000);
-                if (distance.Centimeters < Constants.SafeDistanceCm)
-                {
-                    this.WriteToOutputTextBlock("OBSTACLE in " + distance.Centimeters + "  cm");
-
-                    if (!this.wasObstacleDetected) // new obstacle. Reverse first!
-                    {
-                        this.wasObstacleDetected = true;
-                        this.WriteToOutputTextBlock("Reversing left...");
-                        await this.ExecuteCommandAsync(Commands.DriveReverseLeft);
-                    }
-                    else if (this.wasObstacleDetected) // we are still seing the obstacle to reverse left
-                    {
-                        this.WriteToOutputTextBlock("Reversing...");
-
-                        await this.ExecuteCommandAsync(Commands.DriveReverse);
-                    }
-                }
-                else if (this.wasObstacleDetected)
-                {
-                    this.wasObstacleDetected = false;
-                    this.WriteToOutputTextBlock("Rover at safe distance...");
-                    await this.ExecuteCommandAsync(Commands.DriveForward);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.Write(ex);
-
-                throw;
-            }
-        }
-
-        private async void SendMessage(string message)
-        {
-            // Make sure that the connection is still up and there is a message to send
-            if (this.socket != null)
-            {
-                this.writer.WriteInt32(message.Length);
-                this.writer.WriteString(message);
-
-                await this.writer.StoreAsync();
-            }
-            else
-            {
-                Debug.Write(
-                    "No clients connected, please wait for a client to connect before attempting to send a message");
-            }
-        }
-
-        /// <summary>
-        ///     Invoked when the socket listener accepts an incoming Bluetooth connection.
-        /// </summary>
-        /// <param name="sender">The socket listener that accepted the connection.</param>
-        /// <param name="args">The connection accept parameters, which contain the connected socket.</param>
-        private async void RfcommProvider_ConnectionReceivedEventHandler(
-           StreamSocketListener sender,
-           StreamSocketListenerConnectionReceivedEventArgs args)
-        {
-            Debug.WriteLine("Connection received");
-
-            if (this.isVoiceModeActive)
-            {
-                Debug.Write("Voice Mode Active!");
-                this.SendMessage("Disconnecting device. Aucovei voice mode active.");
-                return;
-            }
-
-            try
-            {
-                this.socket = args.Socket;
-            }
-            catch (Exception e)
-            {
-                Debug.Write(e);
-                this.Disconnect();
-                return;
-            }
-
-            // Note - this is the supported way to get a Bluetooth device from a given socket
-            var remoteDevice = await BluetoothDevice.FromHostNameAsync(this.socket.Information.RemoteHostName);
-            this.UpdateControlModeonUi("Bluetooth", remoteDevice.Name);
-
-            this.writer = new DataWriter(this.socket.OutputStream);
-            var reader = new DataReader(this.socket.InputStream);
-            var remoteDisconnection = false;
-
-            this.playbackService.PlaySoundFromFile(PlaybackService.SoundFiles.Default);
-            Debug.Write("Connected to Client: " + remoteDevice.Name);
-
-            this.SendMessage("hostip:" + Helper.Helpers.GetIPAddress());
-            await Task.Delay(500);
-            this.SendMessage("Ready!");
-
-            // Set speed to normal
-            await this.ExecuteCommandAsync(Commands.SpeedNormal);
-
-            this.displayManager.ClearRow(1);
-            this.displayManager.AppendImage(DisplayImages.BluetoothFind2, 0, 1);
-            this.displayManager.AppendText(" " + remoteDevice.Name, 20, 1);
-
-            // Infinite read buffer loop
-            while (true)
-            {
-                try
-                {
-                    // Based on the protocol we've defined, the first uint is the size of the message
-                    var readLength = await reader.LoadAsync(sizeof(uint));
-
-                    // Check if the size of the displayName is expected (otherwise the remote has already terminated the connection)
-                    if (readLength < sizeof(uint))
-                    {
-                        remoteDisconnection = true;
-                        break;
-                    }
-
-                    var currentLength = reader.ReadUInt32();
-                    if (currentLength == 0)
-                    {
-                        return;
-                    }
-
-                    // Load the rest of the message since you already know the length of the displayName expected.
-                    readLength = await reader.LoadAsync(currentLength);
-
-                    // Check if the size of the displayName is expected (otherwise the remote has already terminated the connection)
-                    if (readLength < currentLength)
-                    {
-                        remoteDisconnection = true;
-                        break;
-                    }
-
-                    var message = reader.ReadString(currentLength);
-                    this.WriteToOutputTextBlock(message);
-
-                    await this.ExecuteCommandAsync(message);
-
-                    Debug.Write("Received: " + message);
-                }
-                // Catch exception HRESULT_FROM_WIN32(ERROR_OPERATION_ABORTED).
-                catch (Exception ex) when ((uint)ex.HResult == 0x800703E3)
-                {
-                    Debug.Write("Client Disconnected Successfully");
-                    break;
-                }
-            }
-
-            reader.DetachStream();
-            if (remoteDisconnection)
-            {
-                this.Disconnect();
-                Debug.Write("Client disconnected");
-            }
-        }
-
-        private async void Disconnect()
-        {
-            this.playbackService.PlaySoundFromFile(PlaybackService.SoundFiles.Disconnected);
-            this.UpdateControlModeonUi(null, null);
-
-            if (this.writer != null)
-            {
-                this.writer.DetachStream();
-                this.writer = null;
-            }
-
-            if (this.socket != null)
-            {
-                this.socket.Dispose();
-                this.socket = null;
-            }
-
-            var server = this.httpServer;
-            if (server != null)
-            {
-                await server?.Stop();
-            }
-
-            await this.ExecuteCommandAsync(Commands.DriveStop);
-
-            this.displayManager.ClearRow(1);
-            this.displayManager.ClearRow(2);
-            this.displayManager.ClearRow(3);
-            Debug.Write("Disconected");
-        }
-
-        private async Task ExecuteCommandAsync(string commandText)
-        {
-            switch (commandText)
-            {
-                case Commands.DriveForward:
-                    {
-                        this.arduino.SendCommand(Commands.DriveForwardValue);
-                        this.displayManager.AppendImage(DisplayImages.TopArrow, 0, 3);
-                        this.displayManager.AppendText("Drive", 19, 3);
-                        //this.UpdateDisplayWithSpeed();
-
-                        break;
-                    }
-                case Commands.DriveReverse:
-                    {
-                        this.playbackService.ChangeMediaSource(PlaybackService.SoundFiles.CensorBeep);
-                        this.playbackService.PlaySound();
-
-                        this.arduino.SendCommand(Commands.DriveReverseValue);
-                        this.displayManager.AppendImage(DisplayImages.BottomArrow, 0, 3);
-                        this.displayManager.AppendText("Drive", 19, 3);
-                        //this.UpdateDisplayWithSpeed();
-
-                        break;
-                    }
-                case Commands.DriveLeft:
-                    {
-                        this.arduino.SendCommand(Commands.DriveLeftValue);
-                        this.displayManager.AppendImage(DisplayImages.LeftArrow, 0, 3);
-                        this.displayManager.AppendText("Drive", 19, 3);
-                        //this.UpdateDisplayWithSpeed();
-
-                        break;
-                    }
-                case Commands.DriveRight:
-                    {
-                        this.arduino.SendCommand(Commands.DriveRightValue);
-                        this.displayManager.AppendImage(DisplayImages.RightArrow, 0, 3);
-                        this.displayManager.AppendText("Drive", 19, 3);
-                        //this.UpdateDisplayWithSpeed();
-
-                        break;
-                    }
-                case Commands.DriveStop:
-                    {
-                        this.arduino.SendCommand(Commands.DriveStopValue);
-                        this.displayManager.ClearRow(2);
-                        this.displayManager.AppendImage(DisplayImages.Stop, 0, 3);
-                        this.displayManager.AppendText("Stop", 19, 3);
-
-                        break;
-                    }
-                case Commands.DriveReverseLeft:
-                    {
-                        this.arduino.SendCommand(Commands.DriveReverseLeftValue);
-                        this.displayManager.AppendImage(DisplayImages.LeftArrow, 0, 3);
-                        this.displayManager.AppendText("Drive", 19, 3);
-                        //this.UpdateDisplayWithSpeed();
-
-                        break;
-                    }
-                case Commands.DriveReverseRight:
-                    {
-                        this.arduino.SendCommand(Commands.DriveReverseRightValue);
-                        this.displayManager.AppendImage(DisplayImages.RightArrow, 0, 3);
-                        this.displayManager.AppendText("Drive", 19, 3);
-                        // this.UpdateDisplayWithSpeed();
-
-                        break;
-                    }
-                case Commands.DriveAutoModeOn:
-                    {
-                        // set speed to slow for auto mode
-                        this.arduino.SendCommand(Commands.SpeedSlowValue);
-
-                        await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal,
-                            () =>
-                            {
-                                this.InitializeDistanceSensor();
-                                this.ultrasonictimer.Start();
-                            });
-
-                        this.arduino.SendCommand(Commands.DriveForwardValue);
-
-                        this.displayManager.AppendImage(DisplayImages.Logo_16_16, 0, 1);
-                        this.Speak("Autonomous mode on!");
-                        this.UpdateControlModeonUi("Autonomous", "Autonomous");
-
-                        break;
-                    }
-                case Commands.DriveAutoModeOff:
-                    {
-                        this.isAutodriveTimerActive = false;
-
-                        await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal,
-                            () =>
-                            {
-                                this.ultrasonictimer?.Stop();
-                            });
-
-                        this.displayManager.ClearRow(1);
-                        this.arduino.SendCommand(Commands.DriveStopValue);
-
-                        // set speed normal when exiting auto mode
-                        this.arduino.SendCommand(Commands.SpeedNormalValue);
-
-                        this.Speak("Autonomous mode off!");
-                        this.UpdateControlModeonUi(null, null);
-
-                        break;
-                    }
-                case Commands.SpeedStop:
-                    {
-                        this.arduino.SendCommand(Commands.SpeedStopValue);
-
-                        break;
-                    }
-                case Commands.SpeedNormal:
-                    {
-                        this.arduino.SendCommand(Commands.SpeedNormalValue);
-
-                        break;
-                    }
-                case Commands.SpeedSlow:
-                    {
-                        this.arduino.SendCommand(Commands.SpeedSlowValue);
-
-                        break;
-                    }
-                case Commands.CameraOn:
-                    {
-                        var server = this.httpServer;
-                        if (server != null)
-                        {
-                            await server?.Start();
-                        }
-
-                        this.SendMessage("CAMON");
-                        this.displayManager.AppendImage(DisplayImages.Camera, 0, 2);
-                        this.UpdateUiButtonStates("camera", Commands.ToggleCommandState.On);
-
-                        break;
-                    }
-                case Commands.CameraOff:
-                    {
-                        var server = this.httpServer;
-                        if (server != null)
-                        {
-                            await server?.Stop();
-                        }
-                        this.SendMessage("CAMOFF");
-                        this.displayManager.ClearRow(2);
-                        this.UpdateUiButtonStates("camera", Commands.ToggleCommandState.Off);
-
-                        break;
-                    }
-                case Commands.TiltUp:
-                    {
-                        await this.panTiltServo.ExecuteCommand(Commands.TiltUpValue);
-                        break;
-                    }
-                case Commands.TiltDown:
-                    {
-                        await this.panTiltServo.ExecuteCommand(Commands.TiltDownValue);
-                        break;
-                    }
-                case Commands.PanLeft:
-                    {
-                        await this.panTiltServo.ExecuteCommand(Commands.PanLeftValue);
-                        break;
-                    }
-                case Commands.PanRight:
-                    {
-                        await this.panTiltServo.ExecuteCommand(Commands.PanRightValue);
-                        break;
-                    }
-                case Commands.PanTiltCenter:
-                    {
-                        await this.panTiltServo.ExecuteCommand(Commands.PanTiltCenterValue);
-                        break;
-                    }
-                case Commands.Horn:
-                    {
-                        this.playbackService.PlaySoundFromFile(PlaybackService.SoundFiles.Horn);
-
-                        break;
-                    }
-                case Commands.CameraLedOn:
-                    {
-                        this.cameraLedPin.Write(GpioPinValue.High);
-                        this.UpdateUiButtonStates("lights", Commands.ToggleCommandState.On);
-
-                        break;
-                    }
-                case Commands.CameraLedOff:
-                    {
-                        this.cameraLedPin.Write(GpioPinValue.Low);
-                        this.UpdateUiButtonStates("lights", Commands.ToggleCommandState.Off);
-
-                        break;
-                    }
-                default:
-                    {
-                        this.Speak(commandText);
-
-                        break;
-                    }
-            }
         }
 
         private void DisplayNetworkInfo()
@@ -905,11 +474,11 @@ namespace Aucovei.Device
                             response = response + toggleCommandState.ToString().ToLowerInvariant() + "...";
                             if (toggleCommandState == Commands.ToggleCommandState.On)
                             {
-                                await this.ExecuteCommandAsync(Commands.DriveAutoModeOn);
+                                await this.commandProcessor.ExecuteCommandAsync(Commands.DriveAutoModeOn);
                             }
                             else
                             {
-                                await this.ExecuteCommandAsync(Commands.DriveAutoModeOff);
+                                await this.commandProcessor.ExecuteCommandAsync(Commands.DriveAutoModeOff);
                                 this.displayManager.ClearRow(1);
                                 this.displayManager.ClearRow(3);
                             }
@@ -928,15 +497,15 @@ namespace Aucovei.Device
                             {
                                 this.displayManager.AppendImage(DisplayImages.Mic, 0, 1);
 
-                                await this.ExecuteCommandAsync(Commands.SpeedSlow);
+                                await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedSlow);
 
                                 this.UpdateControlModeonUi("voice", "Voice");
                             }
                             else
                             {
                                 // Stop vehicle and reset speed
-                                await this.ExecuteCommandAsync(Commands.DriveStop);
-                                await this.ExecuteCommandAsync(Commands.SpeedNormal);
+                                await this.commandProcessor.ExecuteCommandAsync(Commands.DriveStop);
+                                await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedNormal);
                                 this.displayManager.ClearRow(1);
                                 this.displayManager.ClearRow(3);
                                 this.UpdateControlModeonUi(null, null);
@@ -954,11 +523,11 @@ namespace Aucovei.Device
                             response = response + toggleCommandState.ToString().ToLowerInvariant() + "...";
                             if (toggleCommandState == Commands.ToggleCommandState.On)
                             {
-                                await this.ExecuteCommandAsync(Commands.CameraOn);
+                                await this.commandProcessor.ExecuteCommandAsync(Commands.CameraOn);
                             }
                             else
                             {
-                                await this.ExecuteCommandAsync(Commands.CameraOff);
+                                await this.commandProcessor.ExecuteCommandAsync(Commands.CameraOff);
                             }
 
                             this.Speak(response);
@@ -972,11 +541,11 @@ namespace Aucovei.Device
                             response = response + toggleCommandState.ToString().ToLowerInvariant() + "...";
                             if (toggleCommandState == Commands.ToggleCommandState.On)
                             {
-                                await this.ExecuteCommandAsync(Commands.CameraLedOn);
+                                await this.commandProcessor.ExecuteCommandAsync(Commands.CameraLedOn);
                             }
                             else
                             {
-                                await this.ExecuteCommandAsync(Commands.CameraLedOff);
+                                await this.commandProcessor.ExecuteCommandAsync(Commands.CameraLedOff);
                             }
 
                             this.Speak(response);
@@ -990,7 +559,7 @@ namespace Aucovei.Device
                         {
                             response = response + camerairection.ToString().ToLowerInvariant() + "...";
                             this.Speak(response);
-                            await this.ExecuteCommandAsync(Helper.Helpers.MapCameraDirectionToCommand(camerairection));
+                            await this.commandProcessor.ExecuteCommandAsync(Helper.Helpers.MapCameraDirectionToCommand(camerairection));
                             this.WriteToCommandTextBlock(response, "📸", 1);
                         }
 
@@ -1012,14 +581,14 @@ namespace Aucovei.Device
                         {
                             response = response + drivingDirection.ToString().ToLowerInvariant() + "...";
                             this.Speak(response);
-                            await this.ExecuteCommandAsync(Helper.Helpers.MapDrivingDirectionToCommand(drivingDirection));
+                            await this.commandProcessor.ExecuteCommandAsync(Helper.Helpers.MapDrivingDirectionToCommand(drivingDirection));
                             this.WriteToCommandTextBlock(response, "🏃‍", 1);
                         }
                         break;
                     case VoiceCommandType.Stop:
                         response = "Stopping...";
                         this.Speak(response);
-                        await this.ExecuteCommandAsync(Commands.DriveStop);
+                        await this.commandProcessor.ExecuteCommandAsync(Commands.DriveStop);
                         this.WriteToCommandTextBlock(response, "🛑", 1);
                         this.WriteToOutputTextBlock("Stopping...");
                         break;
@@ -1062,6 +631,25 @@ namespace Aucovei.Device
             this.ShowVoiceCommandPanel(false);
         }
 
+        private void NotifyUIEventHandler(object sender, NotifyUIEventArgs e)
+        {
+            switch (e.NotificationType)
+            {
+                default:
+                case NotificationType.Console:
+                    this.WriteToOutputTextBlock(e.Data);
+                    return;
+                case NotificationType.ControlMode:
+                    this.UpdateControlModeonUi(e.Name, e.Data.ToString());
+                    return;
+                case NotificationType.ButtonState:
+
+                    var state = (Commands.ToggleCommandState)Enum.Parse(typeof(Commands.ToggleCommandState), e.Data, true);
+                    this.UpdateUiButtonStates(e.Name, state);
+                    return;
+            }
+        }
+
         private async void UpdateControlModeonUi(string mode, string displayName)
         {
             await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
@@ -1079,6 +667,11 @@ namespace Aucovei.Device
                 else if (string.Equals(mode, "voice", StringComparison.OrdinalIgnoreCase))
                 {
                     this.ControlerModeIcon.Source = new BitmapImage(new Uri("ms-appx:///Assets/microphone.png", UriKind.RelativeOrAbsolute));
+                    this.ControlerModeValue.Text = displayName;
+                }
+                else if (string.Equals(mode, "navigation", StringComparison.OrdinalIgnoreCase))
+                {
+                    this.ControlerModeIcon.Source = new BitmapImage(new Uri("ms-appx:///Assets/navigation.png", UriKind.RelativeOrAbsolute));
                     this.ControlerModeValue.Text = displayName;
                 }
                 else
@@ -1121,295 +714,12 @@ namespace Aucovei.Device
             });
         }
 
-        private async Task AcquireActiveGpsConnectionAsync()
-        {
-            while (this.currentGpsStatus != GpsInformation.GpsStatus.Active &&
-                   !this.navigationCancellationTokenSource.IsCancellationRequested)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(100), this.navigationCancellationTokenSource.Token);
-            }
-        }
-
-        private List<GeoCoordinate> wayPoints = new List<GeoCoordinate>()
-        {
-            new GeoCoordinate(17.455667,78.3009718),
-            new GeoCoordinate(17.4556962,78.3012658)
-        };
-
-        private int nextWayPointIndex = -1;
-        private GeoCoordinate nextWayPoint;
-        private const double WAYPOINT_DIST_TOLERANCE_METERS = 5.0;
-        private double HEADING_TOLERANCE = 5.0;
-        private CancellationTokenSource navigationCancellationTokenSource;
-
-        private async Task StartRoverAsync()
-        {
-            await this.AcquireActiveGpsConnectionAsync();
-
-            // first waypoint
-            this.nextWayPoint = this.GetNextWayPoint();
-            if (this.nextWayPoint == null)
-            {
-                // you have reached
-            }
-
-            // initial direction
-            await this.ExecuteCommandAsync(Commands.SpeedNormal);
-
-            // get initial direction 
-            this.GetDesiredTurnDirection();
-
-            var tasks = new List<Task>()
-            {
-                this.MoveRoverAsync(),
-                this.UpdateDesiredTurnDirectionAsync(),
-                this.LoadNextWayPointAsync()
-            };
-
-            // execute asynchronously till its cancelled
-            Task.WaitAny(tasks.ToArray(),
-                this.navigationCancellationTokenSource.Token);
-
-            await this.ExecuteCommandAsync(Commands.SpeedStop);
-        }
-
-        private async Task LoadNextWayPointAsync()
-        {
-            while (!this.navigationCancellationTokenSource.Token.IsCancellationRequested)
-            {
-                await this.AcquireActiveGpsConnectionAsync();
-
-                var distanceToTarget = this.CalculateDistanceToWayPointMeters();
-                if (distanceToTarget > WAYPOINT_DIST_TOLERANCE_METERS)
-                {
-                    this.nextWayPoint = this.GetNextWayPoint();
-
-                    // No next waypoint and we are enough close to the target
-                    if (this.nextWayPoint == null)
-                    {
-                        this.navigationCancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(1));
-                    }
-                }
-
-                await Task.Delay(TimeSpan.FromMilliseconds(500));
-            }
-        }
-
-        private GeoCoordinate GetNextWayPoint()
-        {
-            this.nextWayPointIndex++;
-            if (this.nextWayPointIndex == this.wayPoints.Count - 1)
-            {
-                return null;
-            }
-
-            return this.wayPoints[this.nextWayPointIndex];
-        }
-
-        private Commands.DrivingDirection turnDirection;
-        private const int SAFE_DISTANCE = 72;
-        private const int TURN_DISTANCE = 36;
-        private const int STOP_DISTANCE = 12;
-
-        private async Task MoveRoverAsync()
-        {
-            while (!this.navigationCancellationTokenSource.Token.IsCancellationRequested)
-            {
-                await this.AcquireActiveGpsConnectionAsync();
-
-                switch (this.turnDirection)
-                {
-                    case Commands.DrivingDirection.Forward:
-                        await this.ExecuteCommandAsync(Commands.SpeedNormal);
-                        await this.ExecuteCommandAsync(Helpers.MapDrivingDirectionToCommand(this.turnDirection));
-                        break;
-                    case Commands.DrivingDirection.Reverse:
-                        await this.ExecuteCommandAsync(Commands.SpeedNormal);
-                        await this.ExecuteCommandAsync(Helpers.MapDrivingDirectionToCommand(this.turnDirection));
-                        break;
-                    case Commands.DrivingDirection.Left:
-                        await this.ExecuteCommandAsync(Commands.SpeedSlow);
-                        await this.ExecuteCommandAsync(Helpers.MapDrivingDirectionToCommand(this.turnDirection));
-                        break;
-                    case Commands.DrivingDirection.Right:
-                        await this.ExecuteCommandAsync(Commands.SpeedSlow);
-                        await this.ExecuteCommandAsync(Helpers.MapDrivingDirectionToCommand(this.turnDirection));
-                        break;
-                }
-
-                await Task.Delay(TimeSpan.FromMilliseconds(500));
-            }
-        }
-
-        private void GetDesiredTurnDirection()
-        {
-            while (!this.navigationCancellationTokenSource.Token.IsCancellationRequested)
-            {
-                GeoCoordinate currentPosition = new GeoCoordinate(
-                    this.currentGpsPosition.Latitude.Value,
-                    this.currentGpsPosition.Longitude.Value);
-
-                var targetHeading = WayPointHelper.DegreeBearing(currentPosition, this.nextWayPoint);
-
-                // calculate where we need to turn to head to destination
-                var headingError = targetHeading -
-                                   this.compass.GetHeadingInDegrees(this.compass.ReadRaw());
-
-                // adjust for compass wrap
-                if (headingError < -180)
-                {
-                    headingError += 360;
-                }
-
-                if (headingError > 180)
-                {
-                    headingError -= 360;
-                }
-
-                // calculate which way to turn to intercept the targetHeading
-                if (Math.Abs(headingError) <= this.HEADING_TOLERANCE)
-                {
-                    // if within tolerance, don't turn
-                    this.turnDirection = Commands.DrivingDirection.Forward;
-                }
-                else if (Math.Abs(headingError) < 0)
-                {
-                    this.turnDirection = Commands.DrivingDirection.Left;
-                }
-                else if (Math.Abs(headingError) > 0)
-                {
-                    this.turnDirection = Commands.DrivingDirection.Right;
-                }
-                else
-                {
-                    this.turnDirection = Commands.DrivingDirection.Forward;
-                }
-            }
-        }
-
-        private async Task UpdateDesiredTurnDirectionAsync()
-        {
-            while (!this.navigationCancellationTokenSource.Token.IsCancellationRequested)
-            {
-                await this.AcquireActiveGpsConnectionAsync();
-
-                this.GetDesiredTurnDirection();
-
-                await Task.Delay(TimeSpan.FromMilliseconds(500));
-            }
-        }
-
-        //void moveAndAvoid()
-        //{
-        //    if (fwddistance >= SAFE_DISTANCE)       // no close objects in front of car
-        //    {
-        //        //Serial.println("SAFE_DISTANCE");
-
-        //        if (this.turnDirection == straight)
-        //        {
-        //            speed = FAST_SPEED;
-        //        }
-        //        else
-        //        {
-        //            speed = TURN_SPEED;
-        //        }
-
-        //        setDriveSpeed(speed);
-        //        setDirection(this.turnDirection);
-        //    }
-        //    else if (fwddistance > TURN_DISTANCE && fwddistance < SAFE_DISTANCE)    // not yet time to turn, but slow down
-        //    {
-        //        //Serial.println("BELOW SAFE_DISTANCE");
-
-        //        if (this.turnDirection == straight)
-        //        {
-        //            speed = NORMAL_SPEED;
-        //        }
-        //        else
-        //        {
-        //            speed = TURN_SPEED;
-        //            setDirection(this.turnDirection);
-        //        }
-
-        //        setDriveSpeed(speed);
-        //    }
-        //    else if (fwddistance < TURN_DISTANCE && fwddistance > STOP_DISTANCE)  // getting close, time to turn to avoid object
-        //    {
-        //        speed = SLOW_SPEED;
-        //        setDriveSpeed(speed);
-
-        //        //Serial.println("TURN_DISTANCE");
-        //        switch (this.turnDirection)
-        //        {
-        //            case straight:  // going straight currently, so start new turn
-        //                if (headingError <= 0)
-        //                {
-        //                    this.turnDirection = directions::left;
-        //                }
-        //                else
-        //                {
-        //                    this.turnDirection = directions::right;
-        //                }
-
-        //                setDirection(this.turnDirection);
-        //                break;
-        //            case left:
-        //                setDirection(directions::right);// if already turning left, try right
-        //                break;
-        //            case right:
-        //                setDirection(directions::left);// if already turning left, try elft
-        //                break;
-        //        } // end SWITCH
-        //    }
-        //    else if (fwddistance < STOP_DISTANCE)          // too close, stop and back up
-        //    {
-        //        //Serial.println("STOP_DISTANCE");
-        //        setDirection(directions::stopcar); // stop
-        //        setDriveSpeed(STOP_SPEED);
-        //        delay(10);
-        //        this.turnDirection = directions::straight;
-        //        setDirection(directions::back); // drive reverse
-        //        setDriveSpeed(NORMAL_SPEED);
-        //        delay(200);
-        //        while (fwddistance < TURN_DISTANCE)       // backup until we get safe clearance
-        //        {
-        //            //Serial.print("STOP_DISTANCE CALC: ");
-        //            //Serial.print(sonarDistance);
-        //            //Serial.println();
-        //            //if (GPS.parse(GPS.lastNMEA()))
-        //            currentHeading = getComapssHeading();    // get our current heading
-        //                                                     //processGPSData();
-        //            calcDesiredTurn();// calculate how we would optimatally turn, without regard to obstacles
-        //            fwddistance = checkSonarManual();
-        //            updateDisplay();
-        //            delay(100);
-        //        } // while (sonarDistance < TURN_DISTANCE)
-
-        //        setDirection(directions::stopcar);        // stop backing up
-        //    } // end of IF TOO CLOSE
-        //}   // moveAndAvoid()
-
-        private double CalculateDistanceToWayPointMeters()
-        {
-            GeoCoordinate currentPosition = new GeoCoordinate(
-                this.currentGpsPosition.Latitude.Value,
-                this.currentGpsPosition.Longitude.Value);
-
-            var distanceToTarget = WayPointHelper.DistanceBetweenGeoCoordinate(
-                currentPosition,
-                this.nextWayPoint,
-                WayPointHelper.DistanceType.Meters);
-
-            return distanceToTarget;
-        }
-
         private void MainPage_Unloaded(object sender, object args)
         {
             /* Cleanup */
             this.arduino?.Dispose();
             this.rfcommProvider?.Dispose();
             this.displayManager?.Dispose();
-            this.cameraLedPin?.Dispose();
             this.gpsInformation?.Dispose();
             this.compass?.Dispose();
         }

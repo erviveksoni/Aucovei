@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.UI.Core;
 
 namespace Aucovei.Device.Helper
 {
@@ -22,6 +23,11 @@ namespace Aucovei.Device.Helper
             //After task starts timeout begin to tick
             source.CancelAfter(timeout);
             await task;
+        }
+
+        public static Task DispatchAsync(CoreDispatcherPriority priority, DispatchedHandler handler)
+        {
+            return Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(priority, handler).AsTask();
         }
     }
 }

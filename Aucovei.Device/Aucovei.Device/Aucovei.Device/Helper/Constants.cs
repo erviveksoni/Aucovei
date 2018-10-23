@@ -24,17 +24,18 @@ namespace Aucovei.Device
         public const byte SdpServiceNameAttributeType = (4 << 3) | 5;
 
         // The value of the Service Name SDP attribute
-        public const string SdpServiceName = "Bluetooth Rfcomm Chat Service";
+        public const string SdpServiceName = "Aucoveu Rfcomm Channel";
 
-        public const string I2CControllerName = "I2C1";
-
- 
         public const int TriggerPin = 16;
         public const int LedPin = 26;
         public const int EchoPin = 12;
 
         public const double SafeDistanceCm = 50.0;
 
-        internal static int GpsBaudRate = 9600;
+        public const int GpsBaudRate = 9600;
+
+        public const string PrimaryAuthKey = "NXOkpJ5m+HQpfy/mWyxtjw==";
+        public const string DeviceId = "aucovei02";
+        public const string HostName = "aucoveidemo.azure-devices.net";
     }
 }

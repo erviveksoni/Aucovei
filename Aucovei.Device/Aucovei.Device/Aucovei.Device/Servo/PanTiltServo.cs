@@ -6,7 +6,7 @@ using Windows.Devices.Pwm;
 
 namespace Aucovei.Device
 {
-    internal class PanTiltServo
+    public class PanTiltServo
     {
         private PwmController pwmController;
         private PwmPin tiltServo;
