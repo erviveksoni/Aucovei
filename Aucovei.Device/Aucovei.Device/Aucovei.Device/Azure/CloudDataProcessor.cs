@@ -269,11 +269,11 @@ namespace Aucovei.Device.Azure
             }
             else if (deserializableCommand.CommandName == "SendBuzzer")
             {
-                return await this.ExecuteSendBuzzerCommandAsync(deserializableCommand);
+                return await this.ExecuteSendBuzzerCommandAsync();
             }
             else if (deserializableCommand.CommandName == "EmergencyStop")
             {
-                return await this.ExecuteEmergencyStopCommandAsync(deserializableCommand);
+                return await this.ExecuteEmergencyStopCommandAsync();
             }
             else if (deserializableCommand.CommandName == "StartTelemetry")
             {
@@ -306,25 +306,32 @@ namespace Aucovei.Device.Azure
                 dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
                 if (parameters != null)
                 {
-                    dynamic statusstring = ReflectionHelper.GetNamedPropertyValue(
+                    string statusstring = ReflectionHelper.GetNamedPropertyValue(
                         parameters,
                         "data",
                         usesCaseSensitivePropertyNameMatch: true,
                         exceptionThrownIfNoMatch: true);
 
-                    await this.commandProcessor.ExecuteCommandAsync(statusstring);
-
                     int count = 0;
                     if (statusstring != null &&
                         int.TryParse(statusstring.ToString(), out count))
                     {
+                        await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedNormal);
+                        await this.commandProcessor.ExecuteCommandAsync(Commands.DriveForward);
+
+                        while (count > 0)
+                        {
+                            count--;
+                            await Task.Delay(500);
+                        }
+
+                        await this.commandProcessor.ExecuteCommandAsync(Commands.DriveStop);
+
                         return CommandProcessingResult.Success;
                     }
-                    else
-                    {
-                        // setPointTempDynamic is a null reference.
-                        return CommandProcessingResult.CannotComplete;
-                    }
+
+                    // setPointTempDynamic is a null reference.
+                    return CommandProcessingResult.CannotComplete;
                 }
                 else
                 {
@@ -388,25 +395,21 @@ namespace Aucovei.Device.Azure
                 dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
                 if (parameters != null)
                 {
-                    dynamic statusstring = ReflectionHelper.GetNamedPropertyValue(
+                    string value = ReflectionHelper.GetNamedPropertyValue(
                         parameters,
                         "data",
                         usesCaseSensitivePropertyNameMatch: true,
                         exceptionThrownIfNoMatch: true);
 
-                    await this.commandProcessor.ExecuteCommandAsync(statusstring);
-
-                    int count = 0;
-                    if (statusstring != null &&
-                        int.TryParse(statusstring.ToString(), out count))
+                    if (bool.TryParse(value, out var result))
                     {
+                        var cmd = result ? Commands.CameraLedOn : Commands.CameraLedOff;
+                        await this.commandProcessor.ExecuteCommandAsync(cmd);
                         return CommandProcessingResult.Success;
                     }
-                    else
-                    {
-                        // setPointTempDynamic is a null reference.
-                        return CommandProcessingResult.CannotComplete;
-                    }
+
+                    // setPointTempDynamic is a null reference.
+                    return CommandProcessingResult.CannotComplete;
                 }
                 else
                 {
@@ -420,40 +423,13 @@ namespace Aucovei.Device.Azure
             }
         }
 
-        private async Task<CommandProcessingResult> ExecuteSendBuzzerCommandAsync(DeserializableCommand deserializableCommand)
+        private async Task<CommandProcessingResult> ExecuteSendBuzzerCommandAsync()
         {
-            var command = deserializableCommand.Command;
-
             try
             {
-                dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
-                if (parameters != null)
-                {
-                    dynamic statusstring = ReflectionHelper.GetNamedPropertyValue(
-                        parameters,
-                        "data",
-                        usesCaseSensitivePropertyNameMatch: true,
-                        exceptionThrownIfNoMatch: true);
+                await this.commandProcessor.ExecuteCommandAsync(Commands.Horn);
 
-                    await this.commandProcessor.ExecuteCommandAsync(statusstring);
-
-                    int count = 0;
-                    if (statusstring != null &&
-                        int.TryParse(statusstring.ToString(), out count))
-                    {
-                        return CommandProcessingResult.Success;
-                    }
-                    else
-                    {
-                        // setPointTempDynamic is a null reference.
-                        return CommandProcessingResult.CannotComplete;
-                    }
-                }
-                else
-                {
-                    // parameters is a null reference.
-                    return CommandProcessingResult.CannotComplete;
-                }
+                return CommandProcessingResult.Success;
             }
             catch (Exception)
             {
@@ -461,40 +437,13 @@ namespace Aucovei.Device.Azure
             }
         }
 
-        private async Task<CommandProcessingResult> ExecuteEmergencyStopCommandAsync(DeserializableCommand deserializableCommand)
+        private async Task<CommandProcessingResult> ExecuteEmergencyStopCommandAsync()
         {
-            var command = deserializableCommand.Command;
-
             try
             {
-                dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
-                if (parameters != null)
-                {
-                    dynamic statusstring = ReflectionHelper.GetNamedPropertyValue(
-                        parameters,
-                        "data",
-                        usesCaseSensitivePropertyNameMatch: true,
-                        exceptionThrownIfNoMatch: true);
+                await this.commandProcessor.ExecuteCommandAsync(Commands.DriveStop);
 
-                    await this.commandProcessor.ExecuteCommandAsync(statusstring);
-
-                    int count = 0;
-                    if (statusstring != null &&
-                        int.TryParse(statusstring.ToString(), out count))
-                    {
-                        return CommandProcessingResult.Success;
-                    }
-                    else
-                    {
-                        // setPointTempDynamic is a null reference.
-                        return CommandProcessingResult.CannotComplete;
-                    }
-                }
-                else
-                {
-                    // parameters is a null reference.
-                    return CommandProcessingResult.CannotComplete;
-                }
+                return CommandProcessingResult.Success;
             }
             catch (Exception)
             {
