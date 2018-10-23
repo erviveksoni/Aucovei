@@ -23,6 +23,7 @@ namespace Aucovei.Device.Azure
             this.serializer = new JsonSerialize();
             this.commandProcessor = commandProcessor;
             this.wayPointNavigator = wayPointNavigator;
+
         }
 
         public async Task InitializeAsync()

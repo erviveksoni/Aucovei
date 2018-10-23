@@ -113,6 +113,15 @@ namespace Aucovei.Device.WayPointNavigator
             };
 
             this.NotifyUIEvent(notifyEventArgs);
+
+            notifyEventArgs = new NotifyUIEventArgs()
+            {
+                NotificationType = NotificationType.ControlMode,
+                Name = "Parked",
+                Data = "Parked"
+            };
+
+            this.NotifyUIEvent(notifyEventArgs);
         }
 
         private async Task LoadNextWayPointAsync()

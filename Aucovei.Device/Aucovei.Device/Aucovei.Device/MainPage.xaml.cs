@@ -162,6 +162,7 @@ namespace Aucovei.Device
 
                 this.WriteToOutputTextBlock("Initializing waypoint navigator...");
                 WayPointNavigator.WayPointNavigator wayPointNavigator = new WayPointNavigator.WayPointNavigator(this.gpsInformation, this.compass, this.commandProcessor);
+                wayPointNavigator.NotifyUIEventHandler += this.NotifyUIEventHandler;
 
                 this.WriteToOutputTextBlock("Initializing cloud device connection...");
                 this.cloudDataProcessor = new CloudDataProcessor(this.commandProcessor, wayPointNavigator);
