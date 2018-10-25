@@ -22,7 +22,7 @@ namespace Aucovei.Device.Azure
         private WayPointNavigator.WayPointNavigator wayPointNavigator;
         public bool activateExternalTemperature;
         private const int TELEMETRY_REPORT_FREQUENCY_IN_SECONDS = 5;
-        private const int DEVICE_INFO_REPORT_FREQUENCY_IN_SECONDS = 30;
+        private const int DEVICE_INFO_REPORT_FREQUENCY_IN_SECONDS = 600;
 
         private JObject reportedTelemetry;
         public bool IsTelemetryActive { get; set; }
@@ -46,6 +46,8 @@ namespace Aucovei.Device.Azure
             this.SendDeviceInfoAsync(this.tokenSource.Token);
             this.StartReceiveLoopAsync(this.tokenSource.Token);
             this.StartSendLoopAsync(this.tokenSource.Token);
+
+            await Task.FromResult(true);
         }
 
         public async void SendDeviceInfoAsync(CancellationToken token)
@@ -373,6 +375,10 @@ namespace Aucovei.Device.Azure
             {
                 return await this.ExecuteSetLightsCommandAsync(deserializableCommand);
             }
+            else if (deserializableCommand.CommandName == "SetCamera")
+            {
+                return await this.ExecuteSetCameraCommandAsync(deserializableCommand);
+            }
             else if (deserializableCommand.CommandName == "SendBuzzer")
             {
                 return await this.ExecuteSendBuzzerCommandAsync();
@@ -487,6 +493,43 @@ namespace Aucovei.Device.Azure
                 }
 
                 return CommandProcessingResult.CannotComplete;
+            }
+            catch (Exception)
+            {
+                return CommandProcessingResult.RetryLater;
+            }
+        }
+
+        private async Task<CommandProcessingResult> ExecuteSetCameraCommandAsync(DeserializableCommand deserializableCommand)
+        {
+            var command = deserializableCommand.Command;
+
+            try
+            {
+                dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
+                if (parameters != null)
+                {
+                    string value = ReflectionHelper.GetNamedPropertyValue(
+                        parameters,
+                        "data",
+                        usesCaseSensitivePropertyNameMatch: true,
+                        exceptionThrownIfNoMatch: true);
+
+                    if (bool.TryParse(value, out var result))
+                    {
+                        var cmd = result ? Commands.CameraLedOn : Commands.CameraOff;
+                        await this.commandProcessor.ExecuteCommandAsync(cmd);
+                        return CommandProcessingResult.Success;
+                    }
+
+                    // setPointTempDynamic is a null reference.
+                    return CommandProcessingResult.CannotComplete;
+                }
+                else
+                {
+                    // parameters is a null reference.
+                    return CommandProcessingResult.CannotComplete;
+                }
             }
             catch (Exception)
             {

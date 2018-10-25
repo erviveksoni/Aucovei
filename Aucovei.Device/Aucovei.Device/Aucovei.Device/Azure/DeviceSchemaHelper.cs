@@ -150,6 +150,10 @@ namespace Aucovei.Device.Azure
             CommandSchemaHelper.DefineNewParameterOnCommand(command, "data", "boolean");
             CommandSchemaHelper.AddCommandToDevice(device, command);
 
+            command = CommandSchemaHelper.CreateNewCommand("SetCamera");
+            CommandSchemaHelper.DefineNewParameterOnCommand(command, "data", "boolean");
+            CommandSchemaHelper.AddCommandToDevice(device, command);
+
             command = CommandSchemaHelper.CreateNewCommand("StartTelemetry");
             CommandSchemaHelper.AddCommandToDevice(device, command);
 
