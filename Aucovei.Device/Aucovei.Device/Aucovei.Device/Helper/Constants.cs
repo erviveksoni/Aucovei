@@ -34,7 +34,7 @@ namespace Aucovei.Device
 
         public const int GpsBaudRate = 9600;
 
-        public const string PrimaryAuthKey = "NXOkpJ5m+HQpfy/mWyxtjw==";
+        public const string PrimaryAuthKey = "tda2MAMZXX9WhZDQmzGAnQ==";
         public const string DeviceId = "aucovei02";
         public const string HostName = "aucoveidemo.azure-devices.net";
         public const string ObjectTypePrefix = "";
