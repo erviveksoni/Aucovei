@@ -97,10 +97,15 @@
     </Compile>
     <Compile Include="Arduino\Arduino.cs" />
     <Compile Include="Azure\CloudDataProcessor.cs" />
+    <Compile Include="Azure\CommandSchemaHelper.cs" />
     <Compile Include="Azure\DeserializableCommand.cs" />
+    <Compile Include="Azure\DeviceCommandConstants.cs" />
+    <Compile Include="Azure\DeviceModelConstants.cs" />
+    <Compile Include="Azure\DeviceSchemaHelper.cs" />
     <Compile Include="Azure\FunctionalHelper.cs" />
     <Compile Include="Azure\JsonSerialize.cs" />
     <Compile Include="Azure\ReflectionHelper.cs" />
+    <Compile Include="Azure\RemoteMonitorTelemetryData.cs" />
     <Compile Include="Azure\WireCommandSchemaHelper.cs" />
     <Compile Include="CommandProcessor\CommandProcessor.cs" />
     <Compile Include="Compass\HMC5883L.cs" />

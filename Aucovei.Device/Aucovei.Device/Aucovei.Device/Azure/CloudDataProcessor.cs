@@ -1,30 +1,39 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Aucovei.Device.RfcommService;
+using Aucovei.Device.WayPointNavigator;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Client.Exceptions;
-using Microsoft.IoT.DeviceCore;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Aucovei.Device.Azure
 {
     public class CloudDataProcessor : BaseService, IDisposable
     {
-        private readonly IDevice _device;
         private DeviceClient deviceClient;
         private bool _disposed = false;
         private JsonSerialize serializer;
         private CommandProcessor.CommandProcessor commandProcessor;
         private CancellationTokenSource tokenSource;
         private WayPointNavigator.WayPointNavigator wayPointNavigator;
+        private bool isTelemetryActive;
+        public bool activateExternalTemperature;
+        private const int REPORT_FREQUENCY_IN_SECONDS = 5;
+        private JObject reportedTelemetry;
 
-        public CloudDataProcessor(CommandProcessor.CommandProcessor commandProcessor, WayPointNavigator.WayPointNavigator wayPointNavigator)
+        public CloudDataProcessor(
+            CommandProcessor.CommandProcessor commandProcessor,
+            WayPointNavigator.WayPointNavigator wayPointNavigator
+            )
         {
             this.serializer = new JsonSerialize();
             this.commandProcessor = commandProcessor;
             this.wayPointNavigator = wayPointNavigator;
-
+            this.commandProcessor.NotifyCallerEventHandler += this.CommandProcessor_NotifyCallerEventHandler;
         }
 
         public async Task InitializeAsync()
@@ -32,7 +41,32 @@ namespace Aucovei.Device.Azure
             this.tokenSource = new CancellationTokenSource();
             this.deviceClient = DeviceClient.CreateFromConnectionString(this.GetConnectionString(), TransportType.Amqp);
 
+            await this.SendInitialTelemetryAsync(this.tokenSource.Token);
             this.StartReceiveLoopAsync(this.tokenSource.Token);
+            this.StartSendLoopAsync(this.tokenSource.Token);
+        }
+
+        public async Task SendInitialTelemetryAsync(CancellationToken token)
+        {
+            string deviceinfo = this.GetDeviceInfo();
+            await this.SendEventAsync(JObject.Parse(deviceinfo));
+        }
+
+        private string GetDeviceInfo()
+        {
+            dynamic device = DeviceSchemaHelper.BuildDeviceStructure(Constants.DeviceId);
+            device.DeviceProperties = DeviceSchemaHelper.GetDeviceProperties(device);
+            device.DeviceProperties.Latitude = this.wayPointNavigator.CurrentGpsPosition?.Latitude;
+            device.DeviceProperties.Longitude = this.wayPointNavigator.CurrentGpsPosition?.Longitude;
+            device.Commands = CommandSchemaHelper.GetSupportedCommands(device);
+            device.Telemetry = CommandSchemaHelper.GetTelemetrySchema(device);
+            device.Version = Constants.VERSION_2_0;
+            device.ObjectType = Constants.OBJECT_TYPE_DEVICE_INFO;
+
+            // Remove the system properties from a device, to better emulate the behavior of real devices when sending device info messages.
+            DeviceSchemaHelper.RemoveSystemPropertiesForSimulatedDeviceInfo(device);
+
+            return JsonConvert.SerializeObject(device);
         }
 
         private async void StartReceiveLoopAsync(CancellationToken token)
@@ -111,6 +145,49 @@ namespace Aucovei.Device.Azure
             }
         }
 
+        public async void StartSendLoopAsync(CancellationToken token)
+        {
+            this.isTelemetryActive = true;
+            var monitorData = new RemoteMonitorTelemetryData();
+            while (!token.IsCancellationRequested)
+            {
+                if (this.isTelemetryActive)
+                {
+                    monitorData.DeviceId = Constants.DeviceId;
+                    monitorData.Temperature = 45;
+
+                    string value = JsonConvert.SerializeObject(this.reportedTelemetry["RoverSpeed"]);
+                    if (double.TryParse(value, out double val))
+                    {
+                        monitorData.Speed = val;
+                    }
+
+                    value = JsonConvert.SerializeObject(this.reportedTelemetry["IsCameraActive"]);
+                    if (bool.TryParse(value, out bool cameraFlag))
+                    {
+                        monitorData.CameraStatus = cameraFlag;
+                    }
+
+                    value = JsonConvert.SerializeObject(this.reportedTelemetry["DeviceIp"]);
+                    monitorData.DeviceIp = value;
+
+                    if (this.activateExternalTemperature)
+                    {
+                        // monitorData.ExternalTemperature = _externalTemperatureGenerator.GetNextValue();
+                    }
+                    else
+                    {
+                        monitorData.ExternalTemperature = null;
+                    }
+
+                    //_logger.LogInfo("Sending " + messageBody + " for Device: " + _deviceId);
+
+                    await this.SendEventAsync(JObject.FromObject(monitorData));
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(REPORT_FREQUENCY_IN_SECONDS), token);
+            }
+        }
 
         private async Task SignalAbandonedCommand(DeserializableCommand command)
         {
@@ -277,11 +354,11 @@ namespace Aucovei.Device.Azure
             }
             else if (deserializableCommand.CommandName == "StartTelemetry")
             {
-                return await this.ExecuteStartStopTelemetryCommandAsync(true);
+                return this.ExecuteStartStopTelemetryCommandAsync(true);
             }
             else if (deserializableCommand.CommandName == "StopTelemetry")
             {
-                return await this.ExecuteStartStopTelemetryCommandAsync(false);
+                return this.ExecuteStartStopTelemetryCommandAsync(false);
             }
             else
             {
@@ -354,31 +431,33 @@ namespace Aucovei.Device.Azure
                 dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
                 if (parameters != null)
                 {
-                    dynamic statusstring = ReflectionHelper.GetNamedPropertyValue(
+                    string waypointString = ReflectionHelper.GetNamedPropertyValue(
                         parameters,
                         "data",
                         usesCaseSensitivePropertyNameMatch: true,
                         exceptionThrownIfNoMatch: true);
-
-                    await this.commandProcessor.ExecuteCommandAsync(statusstring);
-
-                    int count = 0;
-                    if (statusstring != null &&
-                        int.TryParse(statusstring.ToString(), out count))
+                    if (!string.IsNullOrEmpty(waypointString))
                     {
-                        return CommandProcessingResult.Success;
-                    }
-                    else
-                    {
-                        // setPointTempDynamic is a null reference.
-                        return CommandProcessingResult.CannotComplete;
+                        JArray waypointArray = JArray.Parse(waypointString);
+                        if (waypointArray != null && waypointArray.Count > 0)
+                        {
+                            var wayPoints = new List<GeoCoordinate>();
+                            foreach (var wayPoint in waypointArray)
+                            {
+                                var wayPointObject = new GeoCoordinate(
+                                    wayPoint[0].ToObject<double>(),
+                                    wayPoint[1].ToObject<double>());
+                                wayPoints.Add(wayPointObject);
+                            }
+
+                            await this.wayPointNavigator.StartWayPointNavigationAsync(wayPoints);
+
+                            return CommandProcessingResult.Success;
+                        }
                     }
                 }
-                else
-                {
-                    // parameters is a null reference.
-                    return CommandProcessingResult.CannotComplete;
-                }
+
+                return CommandProcessingResult.CannotComplete;
             }
             catch (Exception)
             {
@@ -451,17 +530,75 @@ namespace Aucovei.Device.Azure
             }
         }
 
-        private async Task<CommandProcessingResult> ExecuteStartStopTelemetryCommandAsync(bool startTelemetry)
+        private CommandProcessingResult ExecuteStartStopTelemetryCommandAsync(bool startTelemetry)
         {
             try
             {
-                await Task.FromResult(1);
+                this.isTelemetryActive = startTelemetry;
                 return CommandProcessingResult.Success;
             }
             catch (Exception)
             {
                 return CommandProcessingResult.RetryLater;
             }
+        }
+
+        private void CommandProcessor_NotifyCallerEventHandler(object sender, CommandProcessor.NotificationDataEventArgs e)
+        {
+            if (string.Equals(e?.Target, "AZURE"))
+            {
+                this.reportedTelemetry = e?.Data as JObject;
+            }
+        }
+
+        private async Task SendEventAsync(JObject eventData)
+        {
+            var eventId = Guid.NewGuid();
+            string objectType = this.GetObjectType(eventData);
+            var objectTypePrefix = Constants.ObjectTypePrefix;
+
+            if (!string.IsNullOrWhiteSpace(objectType) &&
+                !string.IsNullOrEmpty(objectTypePrefix))
+            {
+                eventData["ObjectType"] = objectTypePrefix + objectType;
+            }
+
+            var bytes = this.serializer.SerializeObject(eventData);
+
+            var message = new Microsoft.Azure.Devices.Client.Message(bytes);
+            message.Properties["EventId"] = eventId.ToString();
+
+            try
+            {
+                await this.deviceClient.SendEventAsync(message);
+            }
+            catch (Exception ex)
+            {
+                NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
+                {
+                    NotificationType = NotificationType.Console,
+                    Data = string.Format("{0}{0}*** Exception: SendEventAsync ***{0}{0}EventId: {1}{0}Event Data: {2}{0}Exception: {3}{0}{0}",
+                        Console.Out.NewLine,
+                        ex)
+                };
+
+                this.NotifyUIEvent(notifyEventArgs);
+            }
+        }
+
+        private string GetObjectType(JObject eventData)
+        {
+            if (eventData == null)
+            {
+                throw new ArgumentNullException("eventData");
+            }
+
+            if (eventData["ObjectType"] == null)
+            {
+                return string.Empty;
+            }
+
+            return eventData["ObjectType"].ToString();
         }
 
         /// <summary>

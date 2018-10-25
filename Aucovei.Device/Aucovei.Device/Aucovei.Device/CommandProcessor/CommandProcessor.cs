@@ -8,6 +8,7 @@ using Aucovei.Device.Web;
 using Windows.Devices.Gpio;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
+using Newtonsoft.Json.Linq;
 
 namespace Aucovei.Device.CommandProcessor
 {
@@ -23,6 +24,8 @@ namespace Aucovei.Device.CommandProcessor
         private bool isAutodriveTimerActive;
         private HCSR04 ultrasonicsensor;
         private bool wasObstacleDetected;
+        private double speedInmPerSecond;
+        private bool isCameraActive;
 
         public delegate void NotifyDataEventHandler(object sender, NotificationDataEventArgs e);
 
@@ -42,6 +45,18 @@ namespace Aucovei.Device.CommandProcessor
             this.httpServer = httpServer;
             this.panTiltServo = panTiltServo;
             this.ultrasonicsensor = ultrasonicsensor;
+            this.arduino.I2CDataReceived += this.Arduino_I2CDataReceived;
+        }
+
+        private void Arduino_I2CDataReceived(object sender, Arduino.Arduino.I2CDataReceivedEventArgs e)
+        {
+            this.speedInmPerSecond = Helpers.ConvertRPSToMeterPerSecond(e.Data.ToString());
+            dynamic telemetry = new System.Dynamic.ExpandoObject();
+            telemetry.IsCameraActive = this.isCameraActive;
+            telemetry.RoverSpeed = this.speedInmPerSecond;
+            telemetry.DeviceIp = this.isCameraActive ? Helpers.GetIPAddress()?.ToString() : null;
+
+            this.OnNotifyDataEventHandler("AZURE", JObject.FromObject(telemetry));
         }
 
         public async Task InitializeAsync()
@@ -225,6 +240,7 @@ namespace Aucovei.Device.CommandProcessor
                             Data = Commands.ToggleCommandState.On.ToString()
                         };
 
+                        this.isCameraActive = true;
                         this.NotifyUIEvent(notifyEventArgs);
 
                         break;
@@ -246,6 +262,7 @@ namespace Aucovei.Device.CommandProcessor
                             Data = Commands.ToggleCommandState.Off.ToString()
                         };
 
+                        this.isCameraActive = false;
                         this.NotifyUIEvent(notifyEventArgs);
 
                         break;

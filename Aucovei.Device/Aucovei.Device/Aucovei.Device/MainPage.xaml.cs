@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
-using Aucovei.Device.Azure;
 using Aucovei.Device.Compass;
 using Aucovei.Device.Configuration;
 using Aucovei.Device.Devices;
@@ -17,6 +16,7 @@ using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media.Imaging;
+using Aucovei.Device.Azure;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -164,6 +164,7 @@ namespace Aucovei.Device
                 wayPointNavigator.NotifyUIEventHandler += this.NotifyUIEventHandler;
 
                 this.WriteToOutputTextBlock("Initializing cloud device connection...");
+
                 var cloudDataProcessor = new CloudDataProcessor(this.commandProcessor, wayPointNavigator);
                 cloudDataProcessor.NotifyUIEventHandler += this.NotifyUIEventHandler;
                 await cloudDataProcessor.InitializeAsync();
@@ -723,6 +724,7 @@ namespace Aucovei.Device
             this.displayManager?.Dispose();
             this.gpsInformation?.Dispose();
             this.compass?.Dispose();
+            this.commandProcessor?.Dispose();
         }
     }
 }

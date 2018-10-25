@@ -15,7 +15,7 @@ namespace Aucovei.Device.WayPointNavigator
         private Gps.GpsInformation gpsInformation;
         private HMC5883L compass;
         private CommandProcessor.CommandProcessor commandProcessor;
-        private PositionInfo currentGpsPosition;
+        public PositionInfo CurrentGpsPosition { get; private set; }
 
         public WayPointNavigator(
             Gps.GpsInformation gpsInformation,
@@ -32,7 +32,7 @@ namespace Aucovei.Device.WayPointNavigator
 
         private void GpsInformation_DataReceivedEventHandler(object sender, GpsInformation.GpsDataReceivedEventArgs e)
         {
-            this.currentGpsPosition = e.positionInfo;
+            this.CurrentGpsPosition = e.positionInfo;
         }
 
         private async Task AcquireActiveGpsConnectionAsync()
@@ -63,9 +63,14 @@ namespace Aucovei.Device.WayPointNavigator
 
         public async Task StartWayPointNavigationAsync(List<GeoCoordinate> wayPoints)
         {
-            NotifyUIEventArgs notifyEventArgs = null;
+            if (wayPoints == null || wayPoints.Count < 1)
+            {
+                throw new ArgumentNullException(nameof(wayPoints));
+            }
 
             this.navigationCancellationTokenSource = new CancellationTokenSource();
+
+            NotifyUIEventArgs notifyEventArgs = null;
 
             notifyEventArgs = new NotifyUIEventArgs()
             {
@@ -75,8 +80,6 @@ namespace Aucovei.Device.WayPointNavigator
             };
 
             this.NotifyUIEvent(notifyEventArgs);
-
-            await this.AcquireActiveGpsConnectionAsync();
 
             // first waypoint
             this.nextWayPoint = this.GetNextWayPoint();
@@ -90,6 +93,13 @@ namespace Aucovei.Device.WayPointNavigator
 
                 this.NotifyUIEvent(notifyEventArgs);
             }
+
+            this.StartRoverAsync();
+        }
+
+        private async void StartRoverAsync()
+        {
+            await this.AcquireActiveGpsConnectionAsync();
 
             // initial direction
             await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedNormal);
@@ -106,7 +116,7 @@ namespace Aucovei.Device.WayPointNavigator
 
             await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedStop);
 
-            notifyEventArgs = new NotifyUIEventArgs()
+            NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
             {
                 NotificationType = NotificationType.Console,
                 Data = "All waypoint completed!"

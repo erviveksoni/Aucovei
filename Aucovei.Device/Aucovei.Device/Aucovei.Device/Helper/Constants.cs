@@ -37,5 +37,8 @@ namespace Aucovei.Device
         public const string PrimaryAuthKey = "NXOkpJ5m+HQpfy/mWyxtjw==";
         public const string DeviceId = "aucovei02";
         public const string HostName = "aucoveidemo.azure-devices.net";
+        public const string ObjectTypePrefix = "";
+        public const string OBJECT_TYPE_DEVICE_INFO = "DeviceInfo";
+        public const string VERSION_2_0 = "2.0";
     }
 }
