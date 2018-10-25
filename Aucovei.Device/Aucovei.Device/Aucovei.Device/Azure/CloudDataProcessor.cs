@@ -20,15 +20,17 @@ namespace Aucovei.Device.Azure
         private CommandProcessor.CommandProcessor commandProcessor;
         private CancellationTokenSource tokenSource;
         private WayPointNavigator.WayPointNavigator wayPointNavigator;
-        private bool isTelemetryActive;
         public bool activateExternalTemperature;
-        private const int REPORT_FREQUENCY_IN_SECONDS = 5;
+        private const int TELEMETRY_REPORT_FREQUENCY_IN_SECONDS = 5;
+        private const int DEVICE_INFO_REPORT_FREQUENCY_IN_SECONDS = 30;
+
         private JObject reportedTelemetry;
+        public bool IsTelemetryActive { get; set; }
 
         public CloudDataProcessor(
             CommandProcessor.CommandProcessor commandProcessor,
             WayPointNavigator.WayPointNavigator wayPointNavigator
-            )
+        )
         {
             this.serializer = new JsonSerialize();
             this.commandProcessor = commandProcessor;
@@ -41,15 +43,42 @@ namespace Aucovei.Device.Azure
             this.tokenSource = new CancellationTokenSource();
             this.deviceClient = DeviceClient.CreateFromConnectionString(this.GetConnectionString(), TransportType.Amqp);
 
-            await this.SendInitialTelemetryAsync(this.tokenSource.Token);
+            this.SendDeviceInfoAsync(this.tokenSource.Token);
             this.StartReceiveLoopAsync(this.tokenSource.Token);
             this.StartSendLoopAsync(this.tokenSource.Token);
         }
 
-        public async Task SendInitialTelemetryAsync(CancellationToken token)
+        public async void SendDeviceInfoAsync(CancellationToken token)
         {
-            string deviceinfo = this.GetDeviceInfo();
-            await this.SendEventAsync(JObject.Parse(deviceinfo));
+            Exception exception = null;
+
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    if (this.IsTelemetryActive)
+                    {
+                        string deviceinfo = this.GetDeviceInfo();
+                        await this.SendEventAsync(JObject.Parse(deviceinfo));
+                    }
+
+                    await Task.Delay(TimeSpan.FromSeconds(DEVICE_INFO_REPORT_FREQUENCY_IN_SECONDS), token);
+                }
+            }
+            catch (IotHubException ex)
+            {
+                exception = ex;
+            }
+
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+
+            if (exception != null)
+            {
+                Debug.WriteLine(exception);
+            }
         }
 
         private string GetDeviceInfo()
@@ -147,28 +176,28 @@ namespace Aucovei.Device.Azure
 
         public async void StartSendLoopAsync(CancellationToken token)
         {
-            this.isTelemetryActive = true;
             var monitorData = new RemoteMonitorTelemetryData();
             while (!token.IsCancellationRequested)
             {
-                if (this.isTelemetryActive)
+                if (this.IsTelemetryActive && 
+                    this.reportedTelemetry != null)
                 {
                     monitorData.DeviceId = Constants.DeviceId;
                     monitorData.Temperature = 45;
 
-                    string value = JsonConvert.SerializeObject(this.reportedTelemetry["RoverSpeed"]);
+                    string value = JsonConvert.SerializeObject(this.reportedTelemetry["RoverSpeed"] ?? string.Empty);
                     if (double.TryParse(value, out double val))
                     {
                         monitorData.Speed = val;
                     }
 
-                    value = JsonConvert.SerializeObject(this.reportedTelemetry["IsCameraActive"]);
+                    value = JsonConvert.SerializeObject(this.reportedTelemetry["IsCameraActive"] ?? string.Empty);
                     if (bool.TryParse(value, out bool cameraFlag))
                     {
                         monitorData.CameraStatus = cameraFlag;
                     }
 
-                    value = JsonConvert.SerializeObject(this.reportedTelemetry["DeviceIp"]);
+                    value = JsonConvert.SerializeObject(this.reportedTelemetry["DeviceIp"] ?? string.Empty);
                     monitorData.DeviceIp = value;
 
                     if (this.activateExternalTemperature)
@@ -185,7 +214,7 @@ namespace Aucovei.Device.Azure
                     await this.SendEventAsync(JObject.FromObject(monitorData));
                 }
 
-                await Task.Delay(TimeSpan.FromSeconds(REPORT_FREQUENCY_IN_SECONDS), token);
+                await Task.Delay(TimeSpan.FromSeconds(TELEMETRY_REPORT_FREQUENCY_IN_SECONDS), token);
             }
         }
 
@@ -534,7 +563,7 @@ namespace Aucovei.Device.Azure
         {
             try
             {
-                this.isTelemetryActive = startTelemetry;
+                this.IsTelemetryActive = startTelemetry;
                 return CommandProcessingResult.Success;
             }
             catch (Exception)

@@ -179,6 +179,8 @@ namespace Aucovei.Device
                 this.DisplayNetworkInfo();
                 this.displayManager.AppendImage(DisplayImages.BluetoothDisconnected, 0, 1);
 
+                cloudDataProcessor.IsTelemetryActive = true;
+
                 this.WriteToOutputTextBlock("Initialization complete...");
                 this.Speak("Initialization complete");
             }
