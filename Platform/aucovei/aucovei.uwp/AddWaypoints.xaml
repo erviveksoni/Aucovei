@@ -1,0 +1,131 @@
+<!--
+//*********************************************************
+//
+// Copyright (c) Microsoft. All rights reserved.
+// This code is licensed under the MIT License (MIT).
+// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
+// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
+// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
+// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
+//
+//*********************************************************
+-->
+<Page
+    x:Class="aucovei.uwp.AddWaypoints"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:maps="using:Windows.UI.Xaml.Controls.Maps"
+    xmlns:data="using:aucovei.uwp.Model"
+    xmlns:local="using:aucovei.uwp"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <DataTemplate x:Key="MapButtonTemplate" x:DataType="data:Waypoint">
+            <Button x:Name="mapItemButton" 
+                                        Tapped="mapItemButton_Tapped"
+                                        DoubleTapped="mapItemButton_DoubleTapped"
+                                        Background="Transparent">
+                <StackPanel>
+                    <Border Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+                        <TextBlock Text="{Binding DisplayName}"/>
+                    </Border>
+                    <Image Source="{Binding ImageSourceUri}" maps:MapControl.Location="{Binding Location}" 
+                                          maps:MapControl.NormalizedAnchorPoint="{Binding NormalizedAnchorPoint}">
+                        <Image.Transitions>
+                            <TransitionCollection>
+                                <EntranceThemeTransition/>
+                            </TransitionCollection>
+                        </Image.Transitions>
+                    </Image>
+                </StackPanel>
+            </Button>
+        </DataTemplate>
+        <DataTemplate x:Key="PolylineTemplate" x:DataType="data:PolylinePath">
+            <Polyline
+                Points="{Binding Polyline}"
+                Stroke="{Binding PolylineColor}"
+                StrokeThickness="{Binding PolylineThinkness}"
+                Tag="{Binding PolylineTag}" />
+        </DataTemplate>
+        <local:MyTemplateSelector x:Key="MyTemplateSelector" WayPoint="{StaticResource MapButtonTemplate}" 
+                                  Polyline="{StaticResource PolylineTemplate}" />
+
+    </Page.Resources>
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="wideState">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="641" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="myMap.Height" Value="550"/>
+                        <Setter Target="myMap.Width" Value="1024"/>
+                        <Setter Target="description.Margin" Value="0,0,0,0"/>
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="narrowState">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="myMap.Height" Value="280"/>
+                        <Setter Target="myMap.Width" Value="280"/>
+                        <Setter Target="description.Margin" Value="28,0,0,0"/>
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Margin="12,20,12,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel Margin="0,0,0,10">
+                <TextBlock x:Name="description" Text="Description:" Style="{StaticResource SampleHeaderTextStyle}"/>
+                <!--<TextBlock Style="{StaticResource ScenarioDescriptionTextStyle}" TextWrapping="Wrap">
+                Add upto 5 waypoints you wish to send to the aucovei by adding pushpins (click or touch) on the map.
+                </TextBlock>-->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="20"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="1" Grid.Row="0" MinWidth="250" x:Name="connectedDevice" Text="Connected to: " Style="{StaticResource ScenarioDescriptionTextStyle}" Padding="5,0,10,0"/>
+                    <Ellipse Grid.Column="0" Grid.Row="0" ToolTipService.ToolTip="Offline" x:Name="connStatus" Fill="LightGray" Stroke="White" Width="15" Height="15" HorizontalAlignment="Right"/>
+                    <TextBlock Grid.Column="1" Grid.Row="1" MinWidth="250" Text="Add upto 5 waypoints you wish to send to the aucovei by adding pushpins (click or touch) on the map." Style="{StaticResource ScenarioDescriptionTextStyle}" Padding="0,0,10,0"/>
+                </Grid>
+            </StackPanel>
+            <StackPanel x:Name="mapcontainer" Grid.Row="1">
+                <maps:MapControl x:Name="myMap"
+                                 HorizontalAlignment="Left" 
+                                 TransitFeaturesVisible="False"
+                                 MapServiceToken="h2YcW3nJZiMLAs5HWL0M~_ETszW2yY5J7Dxcz0b_DYg~Ame3zdwEWsKSWhw6M52UayUds62eIsM-l8FDA85Qk2cXO6dWu3-GU0czCMCCHxx4"
+                                 MapTapped="myMap_MapTapped"
+                                 Loaded="MyMap_Loaded"
+                                 MapElementClick="myMap_MapElementClick" RotateInteractionMode="GestureAndControl" TiltInteractionMode="GestureAndControl" TransitFeaturesEnabled="True"
+                                 >
+                    <maps:MapItemsControl x:Name="MapItems" ItemsSource="{Binding}">
+                        <maps:MapItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ContentControl Content="{Binding}" ContentTemplateSelector="{StaticResource MyTemplateSelector}" />
+                            </DataTemplate>
+                        </maps:MapItemsControl.ItemTemplate>
+                    </maps:MapItemsControl>
+
+                </maps:MapControl>
+            </StackPanel>
+            <!-- Status Block for providing messages to the user.  Use the
+             NotifyUser() method to populate the message -->
+            <TextBlock x:Name="StatusBlock" Grid.Row="2" Margin="12, 10, 12, 10" Visibility="Collapsed"/>
+        </Grid>
+    </Grid>
+</Page>

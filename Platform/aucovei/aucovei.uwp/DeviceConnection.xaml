@@ -1,0 +1,83 @@
+<!--
+//*********************************************************
+//
+// Copyright (c) Microsoft. All rights reserved.
+// This code is licensed under the MIT License (MIT).
+// THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
+// ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING ANY
+// IMPLIED WARRANTIES OF FITNESS FOR A PARTICULAR
+// PURPOSE, MERCHANTABILITY, OR NON-INFRINGEMENT.
+//
+//*********************************************************
+-->
+<Page
+    x:Class="aucovei.uwp.DeviceConnection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:data="using:aucovei.uwp.Model"
+    mc:Ignorable="d">
+    <Page.Resources>
+        <DataTemplate x:Key="ImageTextListMailFolderTemplate" x:DataType="data:Vehicle">
+            <Grid Width="280">
+                <TextBlock Text="{x:Bind DisplayName}" Style="{StaticResource BaseTextBlockStyle}"
+                   Margin="8,0,0,0" HorizontalAlignment="Left" TextWrapping="Wrap"/>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="wideState">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="641" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="myMap.Height" Value="600"/>
+                        <Setter Target="myMap.Width" Value="1024"/>
+                        <Setter Target="description.Margin" Value="0,0,0,0"/>
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="narrowState">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="myMap.Height" Value="280"/>
+                        <Setter Target="myMap.Width" Value="280"/>
+                        <Setter Target="description.Margin" Value="28,0,0,0"/>
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" Margin="12,20,12,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel Margin="0,0,0,10">
+                <TextBlock x:Name="description" Text="Description:" Style="{StaticResource SampleHeaderTextStyle}"/>
+                <TextBlock Style="{StaticResource ScenarioDescriptionTextStyle}" TextWrapping="Wrap">
+               Select an aucovie to continue.
+                </TextBlock>
+            </StackPanel>
+            <StackPanel  Grid.Row="1">
+                <ListView x:Name="DeviceList"
+                          ItemsSource="{x:Bind devices}"
+                          ItemTemplate="{StaticResource ImageTextListMailFolderTemplate}"
+                          CanDragItems="True" 
+                          IsItemClickEnabled="True"
+                          IsSwipeEnabled="True"
+                          SelectionChanged="DeviceList_SelectionChanged"
+                          Height="500">
+                </ListView>
+            </StackPanel>
+            <!-- Status Block for providing messages to the user.  Use the
+             NotifyUser() method to populate the message -->
+            <TextBlock x:Name="StatusBlock" Grid.Row="2" Margin="12, 10, 12, 10" Visibility="Collapsed"/>
+        </Grid>
+    </Grid>
+</Page>

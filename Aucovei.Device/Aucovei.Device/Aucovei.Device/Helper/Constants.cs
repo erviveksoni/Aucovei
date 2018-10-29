@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Aucovei.Device
 {
@@ -40,5 +36,8 @@ namespace Aucovei.Device
         public const string ObjectTypePrefix = "";
         public const string OBJECT_TYPE_DEVICE_INFO = "DeviceInfo";
         public const string VERSION_2_0 = "2.0";
+
+
+        public const string WebSocketEndpoint = "ws://aucoveidemo.azurewebsites.net/api/v1/videoframes/sender?deviceid=";
     }
 }

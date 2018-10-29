@@ -1,13 +1,16 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
-using Windows.Networking.Sockets;
-using Windows.Storage.Streams;
 using Aucovei.Device.Configuration;
 using Aucovei.Device.Devices;
 using Aucovei.Device.Helper;
+using Windows.Networking.Sockets;
+using Windows.Storage.Streams;
 
 namespace Aucovei.Device.Web
 {
@@ -15,11 +18,13 @@ namespace Aucovei.Device.Web
     {
         private const uint BUFFER_SIZE = 3024;
         private readonly StreamSocketListener _listener;
+        private CancellationTokenSource streamCancellationTokenSource;
 
         //Dependency objects
         private Camera _camera;
         private VideoSetting videoSetting;
         private bool isFeedActive;
+        private StreamWebSocket cloudStreamWebSocket;
 
         public HttpServer(Camera camera, VideoSetting videoSetting)
         {
@@ -33,6 +38,7 @@ namespace Aucovei.Device.Web
             this._listener.Control.NoDelay = false;
             this._listener.Control.QualityOfService = SocketQualityOfService.LowLatency;
             this._listener.BindServiceNameAsync(80.ToString()).GetAwaiter();
+
         }
 
         public async Task Start()
@@ -42,10 +48,11 @@ namespace Aucovei.Device.Web
                 return;
             }
 
+            this.streamCancellationTokenSource = new CancellationTokenSource();
             await this._camera.Initialize(this.videoSetting);
             this._camera.Start();
-
             this.isFeedActive = true;
+            await this.StreamToCloudAsync();
         }
 
         public async Task Stop()
@@ -57,6 +64,7 @@ namespace Aucovei.Device.Web
                     return;
                 }
 
+                this.streamCancellationTokenSource.Cancel();
                 await this._camera.Stop();
                 this.isFeedActive = false;
 
@@ -190,6 +198,65 @@ namespace Aucovei.Device.Web
         {
             var folderPath = relativeUrl.Replace('/', '\\');
             return folderPath;
+        }
+
+
+        private void MStreamWebSocket_Closed(IWebSocket sender, WebSocketClosedEventArgs args)
+        {
+            this.closeSocket(sender);
+        }
+
+        public async Task StreamToCloudAsync()
+        {
+            if (this.cloudStreamWebSocket != null)
+            {
+                this.closeSocket(this.cloudStreamWebSocket);
+            }
+
+            this.cloudStreamWebSocket = new StreamWebSocket();
+            this.cloudStreamWebSocket.Closed += this.MStreamWebSocket_Closed;
+
+            try
+            {
+                await this.cloudStreamWebSocket.ConnectAsync(new Uri(string.Format("{0}{1}", Constants.WebSocketEndpoint, Constants.DeviceId)));
+
+                var task = Task.Run(async () =>
+                {
+                    var socket = this.cloudStreamWebSocket;
+                    while (!this.streamCancellationTokenSource.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            if (this._camera.Frame != null)
+                            {
+                                var clone = this._camera.Frame.ToArray();
+                                await socket.OutputStream.WriteAsync(clone.AsBuffer());
+                                await Task.Delay(100);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                        }
+                    }
+                }, this.streamCancellationTokenSource.Token);
+            }
+            catch (Exception ex)
+            {
+                this.cloudStreamWebSocket.Dispose();
+                this.cloudStreamWebSocket = null;
+            }
+        }
+
+        private void closeSocket(IWebSocket webSocket)
+        {
+            try
+            {
+                webSocket.Close(1000, "Closed due to user request.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
         }
     }
 }
