@@ -55,7 +55,7 @@ namespace Aucovei.Device
             this.tiltServo.SetActiveDutyCyclePercentage(this.RestingPulseLegnth);
             this.tiltServo.Start();
 
-            Task.Run(() =>
+            var task = Task.Run(() =>
             {
                 System.Threading.Tasks.Task.Delay(250).Wait();
                 this.tiltServo.Stop();

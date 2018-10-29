@@ -181,7 +181,7 @@ namespace Aucovei.Device.Azure
             var monitorData = new RemoteMonitorTelemetryData();
             while (!token.IsCancellationRequested)
             {
-                if (this.IsTelemetryActive && 
+                if (this.IsTelemetryActive &&
                     this.reportedTelemetry != null)
                 {
                     monitorData.DeviceId = Constants.DeviceId;
@@ -394,6 +394,10 @@ namespace Aucovei.Device.Azure
             else if (deserializableCommand.CommandName == "StopTelemetry")
             {
                 return this.ExecuteStartStopTelemetryCommandAsync(false);
+            }
+            else if (deserializableCommand.CommandName == "MoveCamera")
+            {
+                return await this.ExecuteMoveCameraCommandAsync(deserializableCommand);
             }
             else
             {
@@ -608,6 +612,44 @@ namespace Aucovei.Device.Azure
             {
                 this.IsTelemetryActive = startTelemetry;
                 return CommandProcessingResult.Success;
+            }
+            catch (Exception)
+            {
+                return CommandProcessingResult.RetryLater;
+            }
+        }
+
+        private async Task<CommandProcessingResult> ExecuteMoveCameraCommandAsync(
+            DeserializableCommand deserializableCommand)
+        {
+            var command = deserializableCommand.Command;
+
+            try
+            {
+                dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
+                if (parameters != null)
+                {
+                    string value = ReflectionHelper.GetNamedPropertyValue(
+                        parameters,
+                        "data",
+                        usesCaseSensitivePropertyNameMatch: true,
+                        exceptionThrownIfNoMatch: true);
+
+                    if (!string.IsNullOrEmpty(value) &&
+                        Enum.TryParse(
+                            typeof(Commands.CameraDirection),
+                            value.Trim(),
+                            true,
+                            out var direction))
+                    {
+                        string camdirection = Helper.Helpers.MapCameraDirectionToCommand((Commands.CameraDirection)direction);
+                        await this.commandProcessor.ExecuteCommandAsync(camdirection);
+
+                        return CommandProcessingResult.Success;
+                    }
+                }
+
+                return CommandProcessingResult.CannotComplete;
             }
             catch (Exception)
             {

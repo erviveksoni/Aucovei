@@ -163,6 +163,10 @@ namespace Aucovei.Device.Azure
             command = CommandSchemaHelper.CreateNewCommand("DemoRun");
             CommandSchemaHelper.DefineNewParameterOnCommand(command, "data", "int");
             CommandSchemaHelper.AddCommandToDevice(device, command);
+
+            command = CommandSchemaHelper.CreateNewCommand("MoveCamera");
+            CommandSchemaHelper.DefineNewParameterOnCommand(command, "data", "string");
+            CommandSchemaHelper.AddCommandToDevice(device, command);
         }
     }
 }
