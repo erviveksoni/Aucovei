@@ -18,5 +18,7 @@ namespace aucovei.uwp.Model
         public Geopoint StartPosition { get; set; }
 
         public ObservableCollection<Waypoint> WayPoints { get; set; }
+
+        public bool IsNewGeneration { get; set; }
     }
 }

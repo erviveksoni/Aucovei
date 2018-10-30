@@ -40,6 +40,16 @@ namespace Microsoft.Azure.Devices.Applications.RemoteMonitoring.DeviceAdmin.Infr
         }
 
         /// <summary>
+        /// Values for telemetry data associated with individual fields
+        /// </summary>
+        private IDictionary<string, string> stringvalues = new Dictionary<string, string>();
+        public IDictionary<string, string> StringValues
+        {
+            get { return stringvalues; }
+            set { stringvalues = value; }
+        }
+
+        /// <summary>
         /// Gets or sets the time of record for the represented telemetry 
         /// recording.
         /// </summary>

@@ -9,14 +9,15 @@
 //
 //*********************************************************
 
-using aucovei.uwp.Helpers;
-using aucovei.uwp.Model;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using aucovei.uwp.Helpers;
+using aucovei.uwp.Model;
+using Newtonsoft.Json.Linq;
 using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
@@ -34,13 +35,7 @@ namespace aucovei.uwp
         private MainPage rootPage;
         ServiceHelper svcHelper;
 
-        private ObservableCollection<Vehicle> devices
-        {
-            get
-            {
-                return getLocalDevices();
-            }
-        }
+        private ObservableCollection<Vehicle> devices => this.getLocalDevices();
 
         private ObservableCollection<Vehicle> getLocalDevices()
         {
@@ -55,7 +50,8 @@ namespace aucovei.uwp
                 DisplayName = i.DisplayName,
                 Id = i.Id,
                 StartPosition = i.StartPosition,
-                WayPoints = i.WayPoints
+                WayPoints = i.WayPoints,
+                IsNewGeneration = i.IsNewGeneration
             }).ToList();
 
             devices = new ObservableCollection<Vehicle>(_devices);
@@ -67,14 +63,14 @@ namespace aucovei.uwp
         {
             this.InitializeComponent();
             this.description.Text = "Connect to an aucovei";
-            CreateCommandBarButtons();
-            svcHelper = new ServiceHelper();
+            this.CreateCommandBarButtons();
+            this.svcHelper = new ServiceHelper();
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
-            rootPage = MainPage.Current;
-            RefreshDeviceList();
+            this.rootPage = MainPage.Current;
+            this.RefreshDeviceList();
         }
 
         private void CreateCommandBarButtons()
@@ -89,7 +85,7 @@ namespace aucovei.uwp
                 connectBtn.Name = "ConnectDevice";
                 connectBtn.Label = "Connect Device";
                 connectBtn.IsEnabled = false;
-                connectBtn.Click += ConnectBtn_Click;
+                connectBtn.Click += this.ConnectBtn_Click;
                 App.AppCommandBar.PrimaryCommands.Insert(0, connectBtn);
             }
 
@@ -100,7 +96,7 @@ namespace aucovei.uwp
                 refreshBtn.Icon = new SymbolIcon(Symbol.Refresh);
                 refreshBtn.Name = "RefreshDeviceList";
                 refreshBtn.Label = "Refresh List";
-                refreshBtn.Click += RefreshBtn_Click;
+                refreshBtn.Click += this.RefreshBtn_Click;
                 App.AppCommandBar.PrimaryCommands.Insert(1, refreshBtn);
             }
 
@@ -113,7 +109,7 @@ namespace aucovei.uwp
                 disconnectBtn.Icon = icon;
                 disconnectBtn.Name = "DisconnectDevice";
                 disconnectBtn.Label = "Disconnect Device";
-                disconnectBtn.Click += DisconnectBtn_Click;
+                disconnectBtn.Click += this.DisconnectBtn_Click;
                 disconnectBtn.Visibility = Visibility.Collapsed;
                 App.AppCommandBar.PrimaryCommands.Insert(1, disconnectBtn);
             }
@@ -136,7 +132,7 @@ namespace aucovei.uwp
                 hornBtn.Icon = icon;
                 hornBtn.Name = "Horn";
                 hornBtn.Label = "Horn";
-                hornBtn.Tapped += Toggle_Tapped;
+                hornBtn.Tapped += this.Toggle_Tapped;
                 hornBtn.Visibility = Visibility.Collapsed;
                 App.AppCommandBar.PrimaryCommands.Insert(2, hornBtn);
             }
@@ -150,9 +146,23 @@ namespace aucovei.uwp
                 headlights.Icon = icon;
                 headlights.Name = "Headlights";
                 headlights.Label = "Headlights";
-                headlights.Tapped += Toggle_Tapped; ;
+                headlights.Tapped += this.Toggle_Tapped; ;
                 headlights.Visibility = Visibility.Collapsed;
                 App.AppCommandBar.PrimaryCommands.Insert(3, headlights);
+            }
+
+            AppBarToggleButton camera = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarToggleButton && ((AppBarToggleButton)i).Name == "Camera") as AppBarToggleButton;
+            if (camera == null)
+            {
+                camera = new AppBarToggleButton();
+                BitmapIcon icon = new BitmapIcon();
+                icon.UriSource = new Uri("ms-appx:///Assets/camera.png");
+                camera.Icon = icon;
+                camera.Name = "Camera";
+                camera.Label = "Camera";
+                camera.Tapped += this.Toggle_Tapped; ;
+                camera.Visibility = Visibility.Collapsed;
+                App.AppCommandBar.PrimaryCommands.Insert(4, camera);
             }
 
             AppBarButton deleteroute = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarButton && ((AppBarButton)i).Name == "DeleteRoute") as AppBarButton;
@@ -162,9 +172,9 @@ namespace aucovei.uwp
                 deleteroute.Icon = new SymbolIcon(Symbol.Delete);
                 deleteroute.Name = "DeleteRoute";
                 deleteroute.Label = "Delete Route";
-                deleteroute.Tapped += Toggle_Tapped;
+                deleteroute.Tapped += this.Toggle_Tapped;
                 deleteroute.Visibility = Visibility.Collapsed;
-                App.AppCommandBar.PrimaryCommands.Insert(4, deleteroute);
+                App.AppCommandBar.PrimaryCommands.Insert(5, deleteroute);
             }
 
             AppBarSeparator seperator2 = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarSeparator && ((AppBarSeparator)i).Name == "sperator2") as AppBarSeparator;
@@ -173,7 +183,7 @@ namespace aucovei.uwp
                 seperator2 = new AppBarSeparator();
                 seperator2.Name = "sperator2";
                 seperator2.Visibility = Visibility.Collapsed;
-                App.AppCommandBar.PrimaryCommands.Insert(5, seperator2);
+                App.AppCommandBar.PrimaryCommands.Insert(6, seperator2);
             }
 
             AppBarButton TestBtn = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarButton && ((AppBarButton)i).Name == "TestBtn") as AppBarButton;
@@ -206,11 +216,10 @@ namespace aucovei.uwp
             if (togglebtn != null)
             {
                 string name = togglebtn.Name;
+                KeyValuePair<string, string> kvp;
                 switch (name)
                 {
                     case "Headlights":
-
-                        KeyValuePair<string, string> kvp;
                         if (togglebtn.IsChecked.Value)
                         {
                             kvp = new KeyValuePair<string, string>("data", "true");
@@ -221,6 +230,20 @@ namespace aucovei.uwp
                         }
 
                         await this.SendCommandToCar("SetLights", kvp);
+
+                        break;
+
+                    case "Camera":
+                        if (togglebtn.IsChecked.Value)
+                        {
+                            kvp = new KeyValuePair<string, string>("data", "true");
+                        }
+                        else
+                        {
+                            kvp = new KeyValuePair<string, string>("data", "false");
+                        }
+
+                        await this.SendCommandToCar("SetCamera", kvp);
 
                         break;
                 }
@@ -248,18 +271,18 @@ namespace aucovei.uwp
             {
                 try
                 {
-                    rootPage.ProgressBar(true);
+                    this.rootPage.ProgressBar(true);
                     await this.svcHelper.SendCommand(App.ConnectedAucovei.Id, commandText, parameters);
                     this.rootPage.NotifyUser($"Command sent to {App.ConnectedAucovei.DisplayName}!", NotifyType.StatusMessage);
                 }
                 catch (Exception uex)
                 {
                     MessageDialog dlg = new MessageDialog(uex.Message);
-                    rootPage.ShowError(dlg);
+                    this.rootPage.ShowError(dlg);
                 }
                 finally
                 {
-                    rootPage.ProgressBar(false);
+                    this.rootPage.ProgressBar(false);
                 }
             }
         }
@@ -268,9 +291,9 @@ namespace aucovei.uwp
         {
             if (serverUpdate || App.Vehicles == null || App.Vehicles.Count == 0)
             {
-                rootPage.ProgressBar(true);
-                await GetDeviceList();
-                rootPage.ProgressBar(false);
+                this.rootPage.ProgressBar(true);
+                await this.GetDeviceList();
+                this.rootPage.ProgressBar(false);
             }
 
             this.DeviceList.ItemsSource = this.devices;
@@ -285,20 +308,20 @@ namespace aucovei.uwp
             if (App.ConnectedAucovei == null || !App.IsConnected)
             {
                 e.Cancel = true;
-                rootPage.UpdateNavigation(0);
-                rootPage.NotifyUser("Please establish connection with an aucovei", NotifyType.ErrorMessage);
+                this.rootPage.UpdateNavigation(0);
+                this.rootPage.NotifyUser("Please establish connection with an aucovei", NotifyType.ErrorMessage);
             }
         }
 
         private void RefreshBtn_Click(object sender, RoutedEventArgs e)
         {
-            RefreshDeviceList(true);
+            this.RefreshDeviceList(true);
         }
 
         private void DisconnectBtn_Click(object sender, RoutedEventArgs e)
         {
-            ResetAppLevelParameters();
-            rootPage.UpdateNavigation(0);
+            this.ResetAppLevelParameters();
+            this.rootPage.UpdateNavigation(0);
 
             AppBarButton refreshBtn = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarButton && ((AppBarButton)i).Name == "RefreshDeviceList") as AppBarButton;
             refreshBtn.Visibility = Visibility.Visible;
@@ -321,6 +344,9 @@ namespace aucovei.uwp
             AppBarToggleButton headlights = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarToggleButton && ((AppBarToggleButton)i).Name == "Headlights") as AppBarToggleButton;
             headlights.Visibility = Visibility.Collapsed;
 
+            AppBarToggleButton camera = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarToggleButton && ((AppBarToggleButton)i).Name == "Camera") as AppBarToggleButton;
+            camera.Visibility = Visibility.Collapsed;
+
             AppBarButton deleteroute = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarButton && ((AppBarButton)i).Name == "DeleteRoute") as AppBarButton;
             deleteroute.Visibility = Visibility.Collapsed;
 
@@ -331,7 +357,7 @@ namespace aucovei.uwp
         private void ConnectBtn_Click(object sender, RoutedEventArgs e)
         {
             App.IsConnected = true;
-            OnConnectionEstablished();
+            this.OnConnectionEstablished();
         }
 
         private void OnConnectionEstablished()
@@ -354,22 +380,30 @@ namespace aucovei.uwp
             AppBarToggleButton headlights = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarToggleButton && ((AppBarToggleButton)i).Name == "Headlights") as AppBarToggleButton;
             headlights.Visibility = Visibility.Visible;
 
+            if (App.ConnectedAucovei.IsNewGeneration)
+            {
+                AppBarToggleButton camera =
+                    App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i =>
+                        i is AppBarToggleButton && ((AppBarToggleButton) i).Name == "Camera") as AppBarToggleButton;
+                camera.Visibility = Visibility.Visible;
+            }
+
             AppBarButton deleteroute = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarButton && ((AppBarButton)i).Name == "DeleteRoute") as AppBarButton;
             deleteroute.Visibility = Visibility.Visible;
 
             AppBarButton hornBtn = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarButton && ((AppBarButton)i).Name == "Horn") as AppBarButton;
             hornBtn.Visibility = Visibility.Visible;
 
-            rootPage.NotifyUser("Connected to " + App.ConnectedAucovei.DisplayName + "!", NotifyType.StatusMessage);
+            this.rootPage.NotifyUser("Connected to " + App.ConnectedAucovei.DisplayName + "!", NotifyType.StatusMessage);
 
-            rootPage.UpdateNavigation(1);
-            Frame.Navigate(typeof(AddWaypoints));
+            this.rootPage.UpdateNavigation(1);
+            this.Frame.Navigate(typeof(AddWaypoints));
         }
 
         private async void MessageBox(string message)
         {
             var dialog = new MessageDialog(message.ToString());
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => await dialog.ShowAsync());
+            await this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => await dialog.ShowAsync());
         }
 
         private void DeviceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -405,7 +439,7 @@ namespace aucovei.uwp
             try
             {
                 App.Vehicles = new ObservableCollection<Vehicle>();
-                dynamic results = await svcHelper.GetDevices();
+                dynamic results = await this.svcHelper.GetDevices();
                 if (results != null)
                 {
                     JObject root = JObject.Parse(results);
@@ -430,6 +464,19 @@ namespace aucovei.uwp
                             });
                         }
 
+                        var generation = jdevice["Version"];
+                        if (generation != null &&
+                            !string.IsNullOrWhiteSpace(generation.ToString()))
+                        {
+                            if (double.TryParse(generation.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var version))
+                            {
+                                if (version > 1.0)
+                                {
+                                    vehicle.IsNewGeneration = true;
+                                }
+                            }
+                        }
+
                         App.Vehicles.Add(vehicle);
                     }
                 }
@@ -437,7 +484,7 @@ namespace aucovei.uwp
             catch (Exception uex)
             {
                 MessageDialog dlg = new MessageDialog(uex.Message);
-                rootPage.ShowError(dlg);
+                this.rootPage.ShowError(dlg);
             }
         }
     }

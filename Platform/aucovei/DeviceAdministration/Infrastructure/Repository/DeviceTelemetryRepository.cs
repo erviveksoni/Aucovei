@@ -405,6 +405,12 @@ namespace Microsoft.Azure.Devices.Applications.RemoteMonitoring.DeviceAdmin.Infr
                                         model.BoolValues.Add(field.Name, boolValue);
                                     }
                                     break;
+                                case "string":
+                                    if (!model.StringValues.ContainsKey(field.Name))
+                                    {
+                                        model.StringValues.Add(field.Name, str.Trim());
+                                    }
+                                    break;
                             }
                         }
                     }
