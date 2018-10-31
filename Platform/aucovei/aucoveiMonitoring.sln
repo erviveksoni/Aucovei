@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2048
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{5959C109-5369-4FF7-8B55-605A79FDF200}"
 EndProject
@@ -30,6 +30,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aucovei.uwp", "aucovei.uwp\aucovei.uwp.csproj", "{DC30CE66-DAEE-4CCF-BD02-8837FE918B6F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XamlBrewer.Uwp.FloatingContentControl", "XamlBrewer.Uwp.FloatingContentControl\XamlBrewer.Uwp.FloatingContentControl.csproj", "{06AEEBE0-E720-469E-A071-349C2029D846}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -175,38 +177,27 @@ Global
 		{DC30CE66-DAEE-4CCF-BD02-8837FE918B6F}.Release|x86.ActiveCfg = Release|x86
 		{DC30CE66-DAEE-4CCF-BD02-8837FE918B6F}.Release|x86.Build.0 = Release|x86
 		{DC30CE66-DAEE-4CCF-BD02-8837FE918B6F}.Release|x86.Deploy.0 = Release|x86
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Debug|ARM.ActiveCfg = Debug|ARM
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Debug|ARM.Build.0 = Debug|ARM
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Debug|x64.ActiveCfg = Debug|x64
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Debug|x64.Build.0 = Debug|x64
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Debug|x86.ActiveCfg = Debug|x86
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Debug|x86.Build.0 = Debug|x86
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Release|ARM.ActiveCfg = Release|ARM
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Release|ARM.Build.0 = Release|ARM
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Release|x64.ActiveCfg = Release|x64
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Release|x64.Build.0 = Release|x64
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Release|x86.ActiveCfg = Release|x86
+		{06AEEBE0-E720-469E-A071-349C2029D846}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 9
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = https://erviveksoni.visualstudio.com/
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = Common\\Common.csproj
-		SccProjectName1 = Common
-		SccLocalPath1 = Common
-		SccProjectUniqueName2 = DeviceAdministration\\Web\\Web.csproj
-		SccProjectName2 = DeviceAdministration/Web
-		SccLocalPath2 = DeviceAdministration\\Web
-		SccProjectUniqueName3 = DeviceAdministration\\Infrastructure\\Infrastructure.csproj
-		SccProjectName3 = DeviceAdministration/Infrastructure
-		SccLocalPath3 = DeviceAdministration\\Infrastructure
-		SccProjectUniqueName4 = EventProcessor\\EventProcessor.WebJob\\EventProcessor.WebJob.csproj
-		SccProjectName4 = EventProcessor/EventProcessor.WebJob
-		SccLocalPath4 = EventProcessor\\EventProcessor.WebJob
-		SccProjectUniqueName5 = Simulator\\Simulator.WebJob\\Simulator.WebJob.csproj
-		SccProjectName5 = Simulator/Simulator.WebJob
-		SccLocalPath5 = Simulator\\Simulator.WebJob
-		SccProjectUniqueName6 = DeviceAdministration\\Infrastructure.UnitTests\\Infrastructure.UnitTests.csproj
-		SccProjectName6 = DeviceAdministration/Infrastructure.UnitTests
-		SccLocalPath6 = DeviceAdministration\\Infrastructure.UnitTests
-		SccProjectUniqueName7 = WebJobHost\\WebJobHost.csproj
-		SccProjectName7 = WebJobHost
-		SccLocalPath7 = WebJobHost
-		SccProjectUniqueName8 = aucovei.uwp\\aucovei.uwp.csproj
-		SccProjectName8 = aucovei.uwp
-		SccLocalPath8 = aucovei.uwp
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {351E1575-131F-4F25-BD39-36D6A81B72FD}
 	EndGlobalSection
 EndGlobal

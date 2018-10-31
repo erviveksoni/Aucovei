@@ -18,25 +18,25 @@ namespace aucovei.uwp.Helpers
 
         public WaypointManager(int threshold)
         {
-            App.ConnectedAucovei.WayPoints = App.ConnectedAucovei.WayPoints ?? new ObservableCollection<Waypoint>();
+            App.AppData.ConnectedAucovei.WayPoints = App.AppData.ConnectedAucovei.WayPoints ?? new ObservableCollection<Waypoint>();
             this.threshold = threshold;
         }
 
         public Waypoint AddWayPoint(Geopoint position)
         {
-            if (App.ConnectedAucovei.WayPoints.Count >= this.threshold)
+            if (App.AppData.ConnectedAucovei.WayPoints.Count >= this.threshold)
             {
                 return null;
             }
 
-            var item = App.ConnectedAucovei.WayPoints.FirstOrDefault(i => i.Location == position);
+            var item = App.AppData.ConnectedAucovei.WayPoints.FirstOrDefault(i => i.Location == position);
 
             if (item != null)
             {
                 return null;
             }
 
-            var waypointlist = (from waypoint in App.ConnectedAucovei.WayPoints
+            var waypointlist = (from waypoint in App.AppData.ConnectedAucovei.WayPoints
                                 where waypoint.GetType() != typeof(PolylinePath)
                                 select waypoint).ToList();
 
@@ -50,9 +50,9 @@ namespace aucovei.uwp.Helpers
                 Index = waypointlist.Count
             };
 
-            App.ConnectedAucovei.WayPoints.Add(wp);
+            App.AppData.ConnectedAucovei.WayPoints.Add(wp);
 
-            waypointlist = (from waypoint in App.ConnectedAucovei.WayPoints
+            waypointlist = (from waypoint in App.AppData.ConnectedAucovei.WayPoints
                             where waypoint.GetType() != typeof(PolylinePath)
                             select waypoint).ToList();
 
@@ -63,7 +63,7 @@ namespace aucovei.uwp.Helpers
 
         public Waypoint GetWayPointByPosition(Geopoint position)
         {
-            var wp = App.ConnectedAucovei.WayPoints.FirstOrDefault(i =>
+            var wp = App.AppData.ConnectedAucovei.WayPoints.FirstOrDefault(i =>
             i.Location.Position.Latitude == position.Position.Latitude &&
             i.Location.Position.Longitude == position.Position.Longitude);
 
@@ -72,7 +72,7 @@ namespace aucovei.uwp.Helpers
 
         public void RemoveWayPoint(Geopoint position)
         {
-            var item = App.ConnectedAucovei.WayPoints.FirstOrDefault(i => i.Location == position);
+            var item = App.AppData.ConnectedAucovei.WayPoints.FirstOrDefault(i => i.Location == position);
 
             if (item == null)
             {
@@ -84,16 +84,16 @@ namespace aucovei.uwp.Helpers
                 return;
             }
 
-            var polylinePaths = App.ConnectedAucovei.WayPoints.Where(i =>
+            var polylinePaths = App.AppData.ConnectedAucovei.WayPoints.Where(i =>
                   i.GetType() == typeof(PolylinePath) && ((PolylinePath)i).PolylinePoints.Contains(position.Position));
 
-            App.ConnectedAucovei.WayPoints.Remove(item);
+            App.AppData.ConnectedAucovei.WayPoints.Remove(item);
 
             if (polylinePaths.Any())
             {
                 foreach (var polylinePath in polylinePaths.ToList())
                 {
-                    App.ConnectedAucovei.WayPoints.Remove(polylinePath);
+                    App.AppData.ConnectedAucovei.WayPoints.Remove(polylinePath);
                 }
             }
 
@@ -103,7 +103,7 @@ namespace aucovei.uwp.Helpers
         private void UpdateWaypointData()
         {
             int index = 1;
-            foreach (var item in App.ConnectedAucovei.WayPoints)
+            foreach (var item in App.AppData.ConnectedAucovei.WayPoints)
             {
                 if (!item.IsStartLocation)
                 {
@@ -116,19 +116,19 @@ namespace aucovei.uwp.Helpers
 
         public void RemoveAllWayPoints()
         {
-            App.ConnectedAucovei.WayPoints.Clear();
+            App.AppData.ConnectedAucovei.WayPoints.Clear();
         }
 
         public async void UpdateDistanceBing(int index)
         {
             if (index >= 1)
             {
-                Geopoint start = new Geopoint(App.ConnectedAucovei.WayPoints[index - 1].Location.Position);
-                Geopoint end = new Geopoint(App.ConnectedAucovei.WayPoints[index].Location.Position);
+                Geopoint start = new Geopoint(App.AppData.ConnectedAucovei.WayPoints[index - 1].Location.Position);
+                Geopoint end = new Geopoint(App.AppData.ConnectedAucovei.WayPoints[index].Location.Position);
                 MapRouteFinderResult results = await MapRouteFinder.GetWalkingRouteAsync(start, end);
                 if (results.Status == MapRouteFinderStatus.Success)
                 {
-                    App.ConnectedAucovei.WayPoints[index].DistanceToPreviousWayPoint = "Distance to previous waypoint: " + results.Route.LengthInMeters.ToString() + "m";
+                    App.AppData.ConnectedAucovei.WayPoints[index].DistanceToPreviousWayPoint = "Distance to previous waypoint: " + results.Route.LengthInMeters.ToString() + "m";
                 }
             }
         }
@@ -137,7 +137,7 @@ namespace aucovei.uwp.Helpers
         {
             if (index >= 1)
             {
-                var waypointlist = (from waypoint in App.ConnectedAucovei.WayPoints
+                var waypointlist = (from waypoint in App.AppData.ConnectedAucovei.WayPoints
                                     where waypoint.GetType() != typeof(PolylinePath)
                                     select waypoint).ToList();
 
@@ -147,7 +147,7 @@ namespace aucovei.uwp.Helpers
                 Position p1 = new Position() { Latitude = start.Position.Latitude, Longitude = start.Position.Longitude };
                 Position p2 = new Position() { Latitude = end.Position.Latitude, Longitude = end.Position.Longitude };
                 double results = Haversine.Distance(p1, p2, DistanceType.Kilometers) * 1000;
-                App.ConnectedAucovei.WayPoints.FirstOrDefault(i => i.DisplayName == previousWayPoint.DisplayName).DistanceToPreviousWayPoint = "Distance to previous waypoint: " + Math.Round(results, 2).ToString() + "m";
+                App.AppData.ConnectedAucovei.WayPoints.FirstOrDefault(i => i.DisplayName == previousWayPoint.DisplayName).DistanceToPreviousWayPoint = "Distance to previous waypoint: " + Math.Round(results, 2).ToString() + "m";
             }
         }
     }

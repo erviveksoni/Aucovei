@@ -9,16 +9,25 @@
 //
 //*********************************************************
 
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Net.WebSockets;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using System.Threading.Tasks;
+using aucovei.uwp.Helpers;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using Newtonsoft.Json.Linq;
+using Windows.Storage.Streams;
+using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -41,6 +50,7 @@ namespace aucovei.uwp
         const string tenant = "e57a8383-f9e1-457e-bb36-96a141f26049";
         const string clientId = "4e187e7e-bfb1-4b84-b301-21223e2c0637";
         const string aadInstance = "https://login.microsoftonline.com/{0}";
+        private CancellationTokenSource tokenSrc;
 
         static string authority = String.Format(CultureInfo.InvariantCulture, aadInstance, tenant);
         //
@@ -58,28 +68,29 @@ namespace aucovei.uwp
             // This is a static public property that allows downstream pages to get a handle to the MainPage instance
             // in order to call methods that are in this class.
             Current = this;
-            SampleTitle.Text = FEATURE_NAME;
+            this.SampleTitle.Text = FEATURE_NAME;
             App.AppCommandBar = this.AppCommandBar;
-
-            redirectURI = Windows.Security.Authentication.Web.WebAuthenticationBroker.GetCurrentApplicationCallbackUri();
-            App.AuthContext = new AuthenticationContext(authority);
+            App.AppData.PropertyChanged += this.AppDataPropertyChanged;
+            this.redirectURI = Windows.Security.Authentication.Web.WebAuthenticationBroker.GetCurrentApplicationCallbackUri();
+            App.AppData.AuthContext = new AuthenticationContext(authority);
+            this.FooterPanel.Visibility = Visibility.Collapsed;
         }
 
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
-            await AuthenticateUser();
+            await this.AuthenticateUser();
 
-            if (App.AuthResult == null) { return; }
+            if (App.AppData.AuthResult == null) { return; }
 
             // Populate the scenario list from the SampleConfiguration.cs file
-            ScenarioControl.ItemsSource = scenarios;
+            this.ScenarioControl.ItemsSource = this.scenarios;
             if (Window.Current.Bounds.Width < 640)
             {
-                ScenarioControl.SelectedIndex = -1;
+                this.ScenarioControl.SelectedIndex = -1;
             }
             else
             {
-                ScenarioControl.SelectedIndex = 0;
+                this.ScenarioControl.SelectedIndex = 0;
             }
         }
 
@@ -87,16 +98,16 @@ namespace aucovei.uwp
         {
             try
             {
-                App.AuthResult = await App.AuthContext.AcquireTokenAsync(aucoveiResourceId, clientId, redirectURI,
+                App.AppData.AuthResult = await App.AppData.AuthContext.AcquireTokenAsync(aucoveiResourceId, clientId, this.redirectURI,
                     new PlatformParameters(PromptBehavior.Auto, false));
-                this.LoginName.Text = $"{App.AuthResult.UserInfo.GivenName} {App.AuthResult.UserInfo.FamilyName}";
+                this.LoginName.Text = $"{App.AppData.AuthResult.UserInfo.GivenName} {App.AppData.AuthResult.UserInfo.FamilyName}";
             }
             catch (AdalException ex)
             {
                 if (ex.ErrorCode == "authentication_canceled")
                 {
                     MessageDialog dialog = new MessageDialog("Sing-in operation cancelled by user.");
-                    ShowError(dialog);
+                    this.ShowError(dialog);
                 }
                 else
                 {
@@ -105,7 +116,7 @@ namespace aucovei.uwp
                             string.Format(
                                 "If the error continues, please contact your administrator.\n\nError Description:\n\n{0}",
                                 ex.Message), "Sorry, an error occurred while signing you in.");
-                    ShowError(dialog);
+                    this.ShowError(dialog);
                 }
 
                 return;
@@ -121,24 +132,21 @@ namespace aucovei.uwp
         private void ScenarioControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             // Clear the status block when navigating scenarios.
-            NotifyUser(String.Empty, NotifyType.StatusMessage);
+            this.NotifyUser(String.Empty, NotifyType.StatusMessage);
 
             ListBox scenarioListBox = sender as ListBox;
             Scenario s = scenarioListBox.SelectedItem as Scenario;
             if (s != null)
             {
-                ScenarioFrame.Navigate(s.ClassType);
+                this.ScenarioFrame.Navigate(s.ClassType);
                 if (Window.Current.Bounds.Width < 640)
                 {
-                    Splitter.IsPaneOpen = false;
+                    this.Splitter.IsPaneOpen = false;
                 }
             }
         }
 
-        public List<Scenario> Scenarios
-        {
-            get { return this.scenarios; }
-        }
+        public List<Scenario> Scenarios => this.scenarios;
 
         /// <summary>
         /// Used to display messages to the user
@@ -150,25 +158,25 @@ namespace aucovei.uwp
             switch (type)
             {
                 case NotifyType.StatusMessage:
-                    StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Green);
+                    this.StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Green);
                     break;
                 case NotifyType.ErrorMessage:
-                    StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Red);
+                    this.StatusBorder.Background = new SolidColorBrush(Windows.UI.Colors.Red);
                     break;
             }
-            StatusBlock.Text = strMessage;
+            this.StatusBlock.Text = strMessage;
 
             // Collapse the StatusBlock if it has no text to conserve real estate.
-            StatusBorder.Visibility = (StatusBlock.Text != String.Empty) ? Visibility.Visible : Visibility.Collapsed;
-            if (StatusBlock.Text != String.Empty)
+            this.StatusBorder.Visibility = (this.StatusBlock.Text != String.Empty) ? Visibility.Visible : Visibility.Collapsed;
+            if (this.StatusBlock.Text != String.Empty)
             {
-                StatusBorder.Visibility = Visibility.Visible;
-                StatusPanel.Visibility = Visibility.Visible;
+                this.StatusBorder.Visibility = Visibility.Visible;
+                this.StatusPanel.Visibility = Visibility.Visible;
             }
             else
             {
-                StatusBorder.Visibility = Visibility.Collapsed;
-                StatusPanel.Visibility = Visibility.Collapsed;
+                this.StatusBorder.Visibility = Visibility.Collapsed;
+                this.StatusPanel.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -196,7 +204,7 @@ namespace aucovei.uwp
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Splitter.IsPaneOpen = !Splitter.IsPaneOpen;
+            this.Splitter.IsPaneOpen = !this.Splitter.IsPaneOpen;
         }
 
         public void UpdateNavigation(int index)
@@ -204,7 +212,161 @@ namespace aucovei.uwp
             this.ScenarioControl.SelectedIndex = index;
         }
 
+        private void AppDataPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            try
+            {
+                if (e.PropertyName.Equals(nameof(App.AppData.IsConnected)))
+                {
+                    if (App.AppData.IsConnected)
+                    {
+                        this.tokenSrc = new CancellationTokenSource();
+                        this.GetDeviceDelemetryAsync();
+                    }
+                    else
+                    {
+                        this.tokenSrc.Cancel();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageDialog dialog = new MessageDialog("An error has occured. Details: " + ex.Message);
+                this.ShowError(dialog);
+            }
+        }
+
+        private async void GetDeviceDelemetryAsync()
+        {
+            var svcHelper = new ServiceHelper();
+            CancellationTokenSource videoToken = null;
+
+            while (!this.tokenSrc.IsCancellationRequested)
+            {
+                try
+                {
+                    dynamic result = await svcHelper.GetDeviceTelemetryAsync(App.AppData.ConnectedAucovei.Id);
+                    JArray telemetry = JArray.Parse(result?.ToString() ?? string.Empty);
+                    if (telemetry.Count > 0)
+                    {
+                        var lastrecord = telemetry.Last;
+                        if (lastrecord["boolValues"] != null &&
+                            lastrecord["boolValues"]["cameraStatus"] != null)
+                        {
+                            var camStatus = lastrecord["boolValues"]["cameraStatus"].ToObject<bool>();
+                            if (camStatus)
+                            {
+                                if (this.FloatingContent.Visibility == Visibility.Collapsed)
+                                {
+                                    videoToken = new CancellationTokenSource();
+                                    this.ReadVideoFramesAsync(videoToken.Token);
+                                }
+                            }
+                            else
+                            {
+                                videoToken?.Cancel();
+                                this.FloatingContent.Visibility = Visibility.Collapsed;
+                            }
+                        }
+                        else
+                        {
+                            videoToken?.Cancel();
+                            this.FloatingContent.Visibility = Visibility.Collapsed;
+                        }
+                    }
+                    else
+                    {
+                        videoToken?.Cancel();
+                        this.FloatingContent.Visibility = Visibility.Collapsed;
+                    }
+                }
+                catch
+                {
+                    //do nothing
+                }
+                finally
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(500));
+                }
+            }
+
+            videoToken?.Cancel();
+            this.FloatingContent.Visibility = Visibility.Collapsed;
+            this.PreviewImage.Source = null;
+        }
+
+        private async void ReadVideoFramesAsync(CancellationToken cameraToken)
+        {
+            try
+            {
+                if (cameraToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                string wsUri = $"{App.WebSocketEndpoint}{App.AppData.ConnectedAucovei.Id}";
+                using (var socket = new ClientWebSocket())
+                {
+                    await socket.ConnectAsync(new Uri(wsUri), cameraToken);
+
+                    while (socket.State == WebSocketState.Open)
+                    {
+                        try
+                        {
+                            if (cameraToken.IsCancellationRequested)
+                            {
+                                break;
+                            }
+
+                            var buffer = new ArraySegment<Byte>(new Byte[40960]);
+                            WebSocketReceiveResult rcvResult = await socket.ReceiveAsync(buffer, cameraToken);
+                            string b64 = String.Empty;
+                            if (rcvResult.MessageType == WebSocketMessageType.Binary)
+                            {
+                                List<byte> data = new List<byte>(buffer.Take(rcvResult.Count));
+                                while (rcvResult.EndOfMessage == false)
+                                {
+                                    rcvResult = await socket.ReceiveAsync(buffer, CancellationToken.None);
+                                    data.AddRange(buffer.Take(rcvResult.Count));
+                                }
+
+                                var task = this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+                                {
+                                    BitmapImage bitmap = new BitmapImage();
+                                    using (InMemoryRandomAccessStream stream = new InMemoryRandomAccessStream())
+                                    {
+                                        await stream.WriteAsync(data.ToArray().AsBuffer());
+                                        stream.Seek(0);
+                                        await bitmap.SetSourceAsync(stream);
+                                    }
+
+                                    this.PreviewImage.Source = bitmap;
+
+                                    RotateTransform transform = new RotateTransform();
+                                    transform.CenterX = this.ImageViewbox.Width / 2;
+                                    transform.CenterY = this.ImageViewbox.Height / 2;
+                                    transform.Angle = 270;
+                                    this.ImageViewbox.RenderTransform = transform;
+
+                                    this.FloatingContent.Visibility = Visibility.Visible;
+                                });
+                            }
+                        }
+                        catch
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(1));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                this.ReadVideoFramesAsync(cameraToken);
+            }
+        }
     }
+
     public enum NotifyType
     {
         StatusMessage,

@@ -39,7 +39,7 @@ namespace aucovei.uwp
         {
             this.InitializeComponent();
             this.description.Text = "Send Waypoints";
-            this.subdescription.Text = $"Review and send waypoints to {App.ConnectedAucovei.DisplayName}";
+            this.subdescription.Text = $"Review and send waypoints to {App.AppData.ConnectedAucovei.DisplayName}";
             this.svcHelper = new ServiceHelper();
         }
 
@@ -54,7 +54,7 @@ namespace aucovei.uwp
             this.rootPage = MainPage.Current;
             _groups = new List<Waypoint>();
 
-            var waypoints = (from waypoint in App.ConnectedAucovei.WayPoints
+            var waypoints = (from waypoint in App.AppData.ConnectedAucovei.WayPoints
                 where waypoint.GetType() != typeof(PolylinePath) select waypoint);
 
             _groups = waypoints.Select(i => new Waypoint()
@@ -99,10 +99,10 @@ namespace aucovei.uwp
             try
             {
                 rootPage.ProgressBar(true);
-                int wpcount = App.ConnectedAucovei.WayPoints.Skip(1).Count();
-                await this.svcHelper.SendCommand(App.ConnectedAucovei.Id, "DemoRun",
+                int wpcount = App.AppData.ConnectedAucovei.WayPoints.Skip(1).Count();
+                await this.svcHelper.SendCommandAsync(App.AppData.ConnectedAucovei.Id, "DemoRun",
                     new KeyValuePair<string, string>("data", wpcount.ToString()));
-                this.rootPage.NotifyUser($"Waypoints sent to {App.ConnectedAucovei.DisplayName}!", NotifyType.StatusMessage);
+                this.rootPage.NotifyUser($"Waypoints sent to {App.AppData.ConnectedAucovei.DisplayName}!", NotifyType.StatusMessage);
             }
             catch (Exception uex)
             {
@@ -143,7 +143,7 @@ namespace aucovei.uwp
         {
             JArray dataArray = new JArray();
 
-            var waypoints = (from waypoint in App.ConnectedAucovei.WayPoints
+            var waypoints = (from waypoint in App.AppData.ConnectedAucovei.WayPoints
                 where waypoint.GetType() != typeof(PolylinePath)
                 select waypoint);
 

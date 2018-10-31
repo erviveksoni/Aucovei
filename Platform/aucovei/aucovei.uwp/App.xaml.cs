@@ -9,15 +9,12 @@
 //
 //*********************************************************
 
-using aucovei.uwp.Helpers;
-using aucovei.uwp.Model;
-using aucovei.uwp.ViewModel;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System;
 using System.Collections.ObjectModel;
-using Windows.ApplicationModel;
+using System.ComponentModel;
+using aucovei.uwp.Model;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Windows.ApplicationModel.Activation;
-using Windows.Devices.Geolocation;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
@@ -67,7 +64,7 @@ namespace aucovei.uwp
                 // Set the default language
                 rootFrame.Language = Windows.Globalization.ApplicationLanguages.Languages[0];
 
-                rootFrame.NavigationFailed += OnNavigationFailed;
+                rootFrame.NavigationFailed += this.OnNavigationFailed;
 
                 if (e.PreviousExecutionState == ApplicationExecutionState.Terminated)
                 {
@@ -102,7 +99,7 @@ namespace aucovei.uwp
 
                 // Set the default language
                 rootFrame.Language = Windows.Globalization.ApplicationLanguages.Languages[0];
-                rootFrame.NavigationFailed += OnNavigationFailed;
+                rootFrame.NavigationFailed += this.OnNavigationFailed;
 
                 // Place the frame in the current Window
                 Window.Current.Content = rootFrame;
@@ -124,22 +121,60 @@ namespace aucovei.uwp
         // Add any application contructor code in here.
         partial void Construct();
 
-        public static double CurrentZoomLevel { get; set; }
-
         public static CommandBar AppCommandBar { get; set; }
-
-        public static Vehicle ConnectedAucovei { get; set; }
-
-        public static bool IsConnected { get; set; }
-
-        public static AuthenticationResult AuthResult { get; set; }
 
         //public const string AucoveiRestBaseAddress = "https://localhost:44305";
 
         public const string AucoveiRestBaseAddress = "https://aucoveidemo.azurewebsites.net";
 
-        public static ObservableCollection<Vehicle> Vehicles { get; set; }
+        public const string WebSocketEndpoint = "ws://aucoveidemo.azurewebsites.net/api/v1/videoframes/receiver?deviceid=";
 
-        public static AuthenticationContext AuthContext { get; set; }
+        private static AppData appData = new AppData();
+
+        public static AppData AppData
+        {
+            get => appData;
+            set { }
+        }
+    }
+
+    public class AppData : INotifyPropertyChanged
+    {
+        private bool isConnected;
+
+        public AuthenticationResult AuthResult { get; set; }
+
+        public double CurrentZoomLevel { get; set; }
+
+        public Vehicle ConnectedAucovei { get; set; }
+
+        public bool IsConnected
+        {
+            get => this.isConnected;
+            set
+            {
+                if (this.isConnected == value)
+                {
+                    return;
+                }
+
+                this.isConnected = value;
+                this.OnPropertyChanged("IsConnected");
+            }
+        }
+
+        public ObservableCollection<Vehicle> Vehicles { get; set; }
+
+        public AuthenticationContext AuthContext { get; set; }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        void OnPropertyChanged(string propertyName)
+        {
+            PropertyChangedEventHandler handler = PropertyChanged;
+            if (handler != null)
+            {
+                handler(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
     }
 }

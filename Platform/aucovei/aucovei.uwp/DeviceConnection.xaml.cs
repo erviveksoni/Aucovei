@@ -40,12 +40,12 @@ namespace aucovei.uwp
         private ObservableCollection<Vehicle> getLocalDevices()
         {
             ObservableCollection<Vehicle> devices = new ObservableCollection<Vehicle>();
-            if (App.Vehicles == null || App.Vehicles.Count < 1)
+            if (App.AppData.Vehicles == null || App.AppData.Vehicles.Count < 1)
             {
                 return devices;
             }
 
-            var _devices = App.Vehicles.Select(i => new Vehicle()
+            var _devices = App.AppData.Vehicles.Select(i => new Vehicle()
             {
                 DisplayName = i.DisplayName,
                 Id = i.Id,
@@ -267,13 +267,13 @@ namespace aucovei.uwp
 
         private async Task SendCommandToCar(string commandText, KeyValuePair<string, string> parameters)
         {
-            if (App.ConnectedAucovei != null && App.IsConnected)
+            if (App.AppData.ConnectedAucovei != null && App.AppData.IsConnected)
             {
                 try
                 {
                     this.rootPage.ProgressBar(true);
-                    await this.svcHelper.SendCommand(App.ConnectedAucovei.Id, commandText, parameters);
-                    this.rootPage.NotifyUser($"Command sent to {App.ConnectedAucovei.DisplayName}!", NotifyType.StatusMessage);
+                    await this.svcHelper.SendCommandAsync(App.AppData.ConnectedAucovei.Id, commandText, parameters);
+                    this.rootPage.NotifyUser($"Command sent to {App.AppData.ConnectedAucovei.DisplayName}!", NotifyType.StatusMessage);
                 }
                 catch (Exception uex)
                 {
@@ -289,7 +289,7 @@ namespace aucovei.uwp
 
         private async void RefreshDeviceList(bool serverUpdate = false)
         {
-            if (serverUpdate || App.Vehicles == null || App.Vehicles.Count == 0)
+            if (serverUpdate || App.AppData.Vehicles == null || App.AppData.Vehicles.Count == 0)
             {
                 this.rootPage.ProgressBar(true);
                 await this.GetDeviceList();
@@ -297,15 +297,15 @@ namespace aucovei.uwp
             }
 
             this.DeviceList.ItemsSource = this.devices;
-            if (App.ConnectedAucovei != null)
+            if (App.AppData.ConnectedAucovei != null)
             {
-                this.DeviceList.SelectedItem = App.ConnectedAucovei;
+                this.DeviceList.SelectedItem = App.AppData.ConnectedAucovei;
             }
         }
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            if (App.ConnectedAucovei == null || !App.IsConnected)
+            if (App.AppData.ConnectedAucovei == null || !App.AppData.IsConnected)
             {
                 e.Cancel = true;
                 this.rootPage.UpdateNavigation(0);
@@ -356,7 +356,7 @@ namespace aucovei.uwp
 
         private void ConnectBtn_Click(object sender, RoutedEventArgs e)
         {
-            App.IsConnected = true;
+            App.AppData.IsConnected = true;
             this.OnConnectionEstablished();
         }
 
@@ -380,7 +380,7 @@ namespace aucovei.uwp
             AppBarToggleButton headlights = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarToggleButton && ((AppBarToggleButton)i).Name == "Headlights") as AppBarToggleButton;
             headlights.Visibility = Visibility.Visible;
 
-            if (App.ConnectedAucovei.IsNewGeneration)
+            if (App.AppData.ConnectedAucovei.IsNewGeneration)
             {
                 AppBarToggleButton camera =
                     App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i =>
@@ -394,7 +394,7 @@ namespace aucovei.uwp
             AppBarButton hornBtn = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarButton && ((AppBarButton)i).Name == "Horn") as AppBarButton;
             hornBtn.Visibility = Visibility.Visible;
 
-            this.rootPage.NotifyUser("Connected to " + App.ConnectedAucovei.DisplayName + "!", NotifyType.StatusMessage);
+            this.rootPage.NotifyUser("Connected to " + App.AppData.ConnectedAucovei.DisplayName + "!", NotifyType.StatusMessage);
 
             this.rootPage.UpdateNavigation(1);
             this.Frame.Navigate(typeof(AddWaypoints));
@@ -411,7 +411,7 @@ namespace aucovei.uwp
             AppBarButton connectBtn = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarButton && ((AppBarButton)i).Name == "ConnectDevice") as AppBarButton;
             if (this.DeviceList.SelectedItem != null)
             {
-                App.ConnectedAucovei = this.DeviceList.SelectedItem as Vehicle;
+                App.AppData.ConnectedAucovei = this.DeviceList.SelectedItem as Vehicle;
                 connectBtn.IsEnabled = true;
             }
             else
@@ -423,23 +423,23 @@ namespace aucovei.uwp
         private void ResetAppLevelParameters()
         {
             //App.StartPosition = null;
-            App.CurrentZoomLevel = 2.0;
-            if (App.ConnectedAucovei.WayPoints != null)
+            App.AppData.CurrentZoomLevel = 2.0;
+            if (App.AppData.ConnectedAucovei.WayPoints != null)
             {
-                App.ConnectedAucovei.WayPoints.Clear();
+                App.AppData.ConnectedAucovei.WayPoints.Clear();
             }
 
             this.devices.Clear();
-            App.ConnectedAucovei = null;
-            App.IsConnected = false;
+            App.AppData.ConnectedAucovei = null;
+            App.AppData.IsConnected = false;
         }
 
         private async Task GetDeviceList()
         {
             try
             {
-                App.Vehicles = new ObservableCollection<Vehicle>();
-                dynamic results = await this.svcHelper.GetDevices();
+                App.AppData.Vehicles = new ObservableCollection<Vehicle>();
+                dynamic results = await this.svcHelper.GetDevicesAsync();
                 if (results != null)
                 {
                     JObject root = JObject.Parse(results);
@@ -477,7 +477,7 @@ namespace aucovei.uwp
                             }
                         }
 
-                        App.Vehicles.Add(vehicle);
+                        App.AppData.Vehicles.Add(vehicle);
                     }
                 }
             }

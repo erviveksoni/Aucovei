@@ -521,7 +521,7 @@ namespace Aucovei.Device.Azure
 
                     if (bool.TryParse(value, out var result))
                     {
-                        var cmd = result ? Commands.CameraLedOn : Commands.CameraOff;
+                        var cmd = result ? Commands.CameraOn : Commands.CameraOff;
                         await this.commandProcessor.ExecuteCommandAsync(cmd);
                         return CommandProcessingResult.Success;
                     }
