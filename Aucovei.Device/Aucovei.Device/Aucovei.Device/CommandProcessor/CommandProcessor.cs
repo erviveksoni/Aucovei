@@ -50,13 +50,20 @@ namespace Aucovei.Device.CommandProcessor
 
         private void Arduino_I2CDataReceived(object sender, Arduino.Arduino.I2CDataReceivedEventArgs e)
         {
-            this.speedInmPerSecond = Helpers.ConvertRPSToMeterPerSecond(e.Data.ToString());
-            dynamic telemetry = new System.Dynamic.ExpandoObject();
-            telemetry.IsCameraActive = this.isCameraActive;
-            telemetry.RoverSpeed = this.speedInmPerSecond;
-            telemetry.DeviceIp = this.isCameraActive ? Helpers.GetIPAddress()?.ToString() : null;
+            try
+            {
+                this.speedInmPerSecond = Helpers.ConvertRPSToMeterPerSecond(e.Data.ToString());
+                dynamic telemetry = new System.Dynamic.ExpandoObject();
+                telemetry.IsCameraActive = this.isCameraActive;
+                telemetry.RoverSpeed = this.speedInmPerSecond;
+                telemetry.DeviceIp = this.isCameraActive ? Helpers.GetIPAddress()?.ToString() : null;
 
-            this.OnNotifyDataEventHandler("AZURE", JObject.FromObject(telemetry));
+                this.OnNotifyDataEventHandler("AZURE", JObject.FromObject(telemetry));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
         }
 
         public async Task InitializeAsync()

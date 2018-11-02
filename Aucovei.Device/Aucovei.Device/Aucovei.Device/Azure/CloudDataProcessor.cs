@@ -395,6 +395,10 @@ namespace Aucovei.Device.Azure
             {
                 return this.ExecuteStartStopTelemetryCommandAsync(false);
             }
+            else if (deserializableCommand.CommandName == "MoveVehicle")
+            {
+                return await this.ExecuteMoveVehicleCommandAsync(deserializableCommand);
+            }
             else if (deserializableCommand.CommandName == "MoveCamera")
             {
                 return await this.ExecuteMoveCameraCommandAsync(deserializableCommand);
@@ -612,6 +616,44 @@ namespace Aucovei.Device.Azure
             {
                 this.IsTelemetryActive = startTelemetry;
                 return CommandProcessingResult.Success;
+            }
+            catch (Exception)
+            {
+                return CommandProcessingResult.RetryLater;
+            }
+        }
+
+        private async Task<CommandProcessingResult> ExecuteMoveVehicleCommandAsync(
+            DeserializableCommand deserializableCommand)
+        {
+            var command = deserializableCommand.Command;
+
+            try
+            {
+                dynamic parameters = WireCommandSchemaHelper.GetParameters(command);
+                if (parameters != null)
+                {
+                    string value = ReflectionHelper.GetNamedPropertyValue(
+                        parameters,
+                        "data",
+                        usesCaseSensitivePropertyNameMatch: true,
+                        exceptionThrownIfNoMatch: true);
+
+                    if (!string.IsNullOrEmpty(value) &&
+                        Enum.TryParse(
+                            typeof(Commands.DrivingDirection),
+                            value.Trim(),
+                            true,
+                            out var direction))
+                    {
+                        string drivingdirection = Helper.Helpers.MapDrivingDirectionToCommand((Commands.DrivingDirection)direction);
+                        await this.commandProcessor.ExecuteCommandAsync(drivingdirection);
+
+                        return CommandProcessingResult.Success;
+                    }
+                }
+
+                return CommandProcessingResult.CannotComplete;
             }
             catch (Exception)
             {

@@ -23,7 +23,9 @@ namespace aucovei.uwp
         {
             new Scenario() { Title="Connect", ClassType=typeof(DeviceConnection)},
             new Scenario() { Title="Add Waypoints", ClassType=typeof(AddWaypoints)},
-            new Scenario() { Title="Review & Send", ClassType=typeof(SendWaypoints)}
+            new Scenario() { Title="Review & Send", ClassType=typeof(SendWaypoints)},
+            new Scenario() { Title="Manual Drive", ClassType=typeof(ManualMode)}
+
         };
     }
 

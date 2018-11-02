@@ -191,7 +191,8 @@ namespace aucovei.uwp
 
         protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
         {
-            if (e.SourcePageType.Name != "DeviceConnection" &&
+            if (e.SourcePageType.Name != "ManualMode" &&
+                e.SourcePageType.Name != "DeviceConnection" &&
                 e.SourcePageType.Name != "AddWaypoints" &&
                 App.AppData.ConnectedAucovei.WayPoints.Count < 2)
             {

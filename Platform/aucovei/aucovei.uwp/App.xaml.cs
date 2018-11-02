@@ -140,6 +140,8 @@ namespace aucovei.uwp
 
     public class AppData : INotifyPropertyChanged
     {
+        private bool isVideoFeedActive;
+
         private bool isConnected;
 
         public AuthenticationResult AuthResult { get; set; }
@@ -147,6 +149,21 @@ namespace aucovei.uwp
         public double CurrentZoomLevel { get; set; }
 
         public Vehicle ConnectedAucovei { get; set; }
+
+        public bool IsVideoFeedActive
+        {
+            get => this.isVideoFeedActive;
+            set
+            {
+                if (this.isVideoFeedActive == value)
+                {
+                    return;
+                }
+
+                this.isVideoFeedActive = value;
+                this.OnPropertyChanged("IsVideoFeedActive");
+            }
+        }
 
         public bool IsConnected
         {

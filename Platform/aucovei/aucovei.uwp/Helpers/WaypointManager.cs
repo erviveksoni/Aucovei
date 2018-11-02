@@ -1,11 +1,7 @@
-﻿using aucovei.uwp;
-using aucovei.uwp.Model;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using aucovei.uwp.Model;
 using Windows.Devices.Geolocation;
 using Windows.Foundation;
 using Windows.Services.Maps;
@@ -39,6 +35,13 @@ namespace aucovei.uwp.Helpers
             var waypointlist = (from waypoint in App.AppData.ConnectedAucovei.WayPoints
                                 where waypoint.GetType() != typeof(PolylinePath)
                                 select waypoint).ToList();
+
+            if (waypointlist.Any(i =>
+                i.Location.Position.Latitude == position.Position.Latitude &&
+                i.Location.Position.Longitude == position.Position.Longitude))
+            {
+                return null;
+            }
 
             Waypoint wp = new Waypoint()
             {
@@ -97,7 +100,7 @@ namespace aucovei.uwp.Helpers
                 }
             }
 
-            UpdateWaypointData();
+            this.UpdateWaypointData();
         }
 
         private void UpdateWaypointData()

@@ -256,27 +256,47 @@ namespace aucovei.uwp
                             var camStatus = lastrecord["boolValues"]["cameraStatus"].ToObject<bool>();
                             if (camStatus)
                             {
-                                if (this.FloatingContent.Visibility == Visibility.Collapsed)
+                                if (!App.AppData.IsVideoFeedActive)
                                 {
-                                    videoToken = new CancellationTokenSource();
-                                    this.ReadVideoFramesAsync(videoToken.Token);
+                                    App.AppData.IsVideoFeedActive = true;
                                 }
+
+                                //if (this.FloatingContent.Visibility == Visibility.Collapsed)
+                                //{
+                                //    videoToken = new CancellationTokenSource();
+                                // //   this.ReadVideoFramesAsync(videoToken.Token);
+                                //}
                             }
                             else
                             {
                                 videoToken?.Cancel();
+                                if (App.AppData.IsVideoFeedActive)
+                                {
+                                    App.AppData.IsVideoFeedActive = false;
+                                }
+
                                 this.FloatingContent.Visibility = Visibility.Collapsed;
                             }
                         }
                         else
                         {
                             videoToken?.Cancel();
+                            if (App.AppData.IsVideoFeedActive)
+                            {
+                                App.AppData.IsVideoFeedActive = false;
+                            }
+
                             this.FloatingContent.Visibility = Visibility.Collapsed;
                         }
                     }
                     else
                     {
                         videoToken?.Cancel();
+                        if (App.AppData.IsVideoFeedActive)
+                        {
+                            App.AppData.IsVideoFeedActive = false;
+                        }
+
                         this.FloatingContent.Visibility = Visibility.Collapsed;
                     }
                 }
@@ -293,6 +313,10 @@ namespace aucovei.uwp
             videoToken?.Cancel();
             this.FloatingContent.Visibility = Visibility.Collapsed;
             this.PreviewImage.Source = null;
+            if (App.AppData.IsVideoFeedActive)
+            {
+                App.AppData.IsVideoFeedActive = false;
+            }
         }
 
         private async void ReadVideoFramesAsync(CancellationToken cameraToken)
@@ -320,7 +344,6 @@ namespace aucovei.uwp
 
                             var buffer = new ArraySegment<Byte>(new Byte[40960]);
                             WebSocketReceiveResult rcvResult = await socket.ReceiveAsync(buffer, cameraToken);
-                            string b64 = String.Empty;
                             if (rcvResult.MessageType == WebSocketMessageType.Binary)
                             {
                                 List<byte> data = new List<byte>(buffer.Take(rcvResult.Count));
@@ -378,7 +401,19 @@ namespace aucovei.uwp
         public object Convert(object value, Type targetType, object parameter, string language)
         {
             Scenario s = value as Scenario;
-            return (MainPage.Current.Scenarios.IndexOf(s) + 1) + ") " + s.Title;
+            if (s.ClassType == typeof(AddWaypoints) || s.ClassType == typeof(ManualMode))
+            {
+                return " ➡️ " + s.Title;
+            }
+            else if (s.ClassType == typeof(SendWaypoints))
+            {
+                return "    ↪️ " + s.Title;
+            }
+            else
+            {
+                return s.Title;
+                // return (MainPage.Current.Scenarios.IndexOf(s) + 1) + ") " + s.Title;
+            }
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, string language)

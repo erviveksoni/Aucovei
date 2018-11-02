@@ -388,8 +388,8 @@ namespace aucovei.uwp
                 camera.Visibility = Visibility.Visible;
             }
 
-            AppBarButton deleteroute = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarButton && ((AppBarButton)i).Name == "DeleteRoute") as AppBarButton;
-            deleteroute.Visibility = Visibility.Visible;
+            //AppBarButton deleteroute = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarButton && ((AppBarButton)i).Name == "DeleteRoute") as AppBarButton;
+            //deleteroute.Visibility = Visibility.Visible;
 
             AppBarButton hornBtn = App.AppCommandBar.PrimaryCommands.ToList().FirstOrDefault(i => i is AppBarButton && ((AppBarButton)i).Name == "Horn") as AppBarButton;
             hornBtn.Visibility = Visibility.Visible;

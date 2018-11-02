@@ -133,12 +133,6 @@ namespace aucovei.uwp
             }
         }
 
-        private async void MessageBox(string message)
-        {
-            var dialog = new MessageDialog(message.ToString());
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => await dialog.ShowAsync());
-        }
-
         private string GetJsonText()
         {
             JArray dataArray = new JArray();
