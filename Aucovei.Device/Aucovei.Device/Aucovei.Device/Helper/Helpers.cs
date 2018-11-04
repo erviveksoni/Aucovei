@@ -21,6 +21,8 @@ namespace Aucovei.Device.Helper
                     return Commands.DriveLeft;
                 case Commands.DrivingDirection.Right:
                     return Commands.DriveRight;
+                case Commands.DrivingDirection.Stop:
+                    return Commands.DriveStop;
             }
         }
 

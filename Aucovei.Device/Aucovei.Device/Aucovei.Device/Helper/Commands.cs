@@ -74,7 +74,8 @@
             Forward,
             Reverse,
             Left,
-            Right
+            Right,
+            Stop
         }
 
         public enum CameraDirection

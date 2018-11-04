@@ -158,6 +158,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\alogo.png" />
+    <Content Include="Assets\arrow.png" />
     <Content Include="Assets\Branding.png" />
     <Content Include="Assets\caricon.png" />
     <Content Include="Assets\circle.png" />
@@ -169,10 +170,12 @@
     <Content Include="Assets\microsoft-sdk.png" />
     <Content Include="Assets\camera.png" />
     <Content Include="Assets\movie.png" />
+    <Content Include="Assets\center.png" />
     <Content Include="Assets\placeholder-sdk.png" />
     <Content Include="Assets\smalltile-sdk.png" />
     <Content Include="Assets\splash-sdk.png" />
     <Content Include="Assets\squaretile-sdk.png" />
+    <Content Include="Assets\stop.png" />
     <Content Include="Assets\storelogo-sdk.png" />
     <Content Include="Assets\tile-sdk.png" />
     <Content Include="Assets\windows-sdk.png" />

@@ -94,11 +94,53 @@
                                 <ColumnDefinition Width="0.5*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Image x:Name="TiltUp" Source="Assets/circlegreen.png" Width="60px" Grid.Row="0" Grid.Column="1" Margin="0,0,0,20"></Image>
-                            <Image x:Name="TiltDown" Source="Assets/circlegreen.png" Width="60px" Grid.Row="2" Grid.Column="1" Margin="0,20,0,0"></Image>
-                            <Image x:Name="PanTiltCenter" Source="Assets/circlegreen.png" Width="60px" Grid.Row="1" Grid.Column="1" ></Image>
-                            <Image x:Name="PanLeft" Source="Assets/circlegreen.png" Width="60px" Grid.Row="1" Grid.Column="0" Margin="100,0,0,0"></Image>
-                            <Image x:Name="PanRight" Source="Assets/circlegreen.png" Width="60px" Grid.Row="1" Grid.Column="2" Margin="0,0,100,0"></Image>
+                            <Button x:Name="CamUp" Grid.Row="0" Grid.Column="1" Margin="0,0,0,20" Holding="CameraButtonHoldingEvent">
+                                <Button.Background>
+                                    <SolidColorBrush Opacity="0"></SolidColorBrush>
+                                </Button.Background>
+                                <Image Source="Assets/arrow.png" Width="60px"  RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <RotateTransform Angle="270"/>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </Button>
+                            <Button x:Name="CamDown"  Grid.Row="2" Grid.Column="1" Margin="0,20,0,0" Holding="CameraButtonHoldingEvent" >
+                                <Button.Background>
+                                    <SolidColorBrush Opacity="0"></SolidColorBrush>
+                                </Button.Background>
+                                <Image Source="Assets/arrow.png" Width="60px" RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <RotateTransform Angle="90"/>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </Button>
+                            <Button x:Name="CamCenter" Grid.Row="1" Grid.Column="1" Margin="0,0,0,0" Click="CameraButtonClick"  Holding="CameraButtonHoldingEvent" >
+                                <Button.Background>
+                                    <SolidColorBrush Opacity="0"></SolidColorBrush>
+                                </Button.Background>
+                                <Image Source="Assets/center.png" Width="60px" RenderTransformOrigin="0.5,0.5">
+                                </Image>
+                            </Button>
+                            <Button x:Name="CamLeft" Grid.Row="1" Grid.Column="0" Margin="80,0,0,0" Holding="CameraButtonHoldingEvent" >
+                                <Button.Background>
+                                    <SolidColorBrush Opacity="0"></SolidColorBrush>
+                                </Button.Background>
+                                <Image Source="Assets/arrow.png" Width="60px" RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <RotateTransform Angle="180"/>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </Button>
+                            <Button x:Name="CamRight" Grid.Row="1" Grid.Column="2" Margin="0,0,0,0" Holding="CameraButtonHoldingEvent" >
+                                <Button.Background>
+                                    <SolidColorBrush Opacity="0"></SolidColorBrush>
+                                </Button.Background>
+                                <Image Source="Assets/arrow.png" Width="60px">
+                                    <Image.RenderTransform>
+                                        <RotateTransform Angle="0"/>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </Button>
                         </Grid>
                         <Grid Grid.Column="2" Margin="0,0,0,50">
                             <Grid.RowDefinitions>
@@ -111,11 +153,52 @@
                                 <ColumnDefinition Width="0.5*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Image x:Name="Forward" Source="Assets/circle.png" Width="60px" Grid.Row="0" Grid.Column="1" Margin="0,0,0,20"></Image>
-                            <Image x:Name="Reverse" Source="Assets/circle.png" Width="60px" Grid.Row="2" Grid.Column="1" Margin="0,20,0,0"></Image>
-                            <Image x:Name="Stop" Source="Assets/circle.png" Width="60px" Grid.Row="1" Grid.Column="1" ></Image>
-                            <Image x:Name="Left" Source="Assets/circle.png" Width="60px" Grid.Row="1" Grid.Column="0" Margin="100,0,0,0"></Image>
-                            <Image x:Name="Right" Source="Assets/circle.png" Width="60px" Grid.Row="1" Grid.Column="2" Margin="0,0,100,0"></Image>
+                            <Button x:Name="Forward" Grid.Row="0" Grid.Column="1" Margin="0,0,0,20" Holding="DriveButtonHoldingEvent" >
+                                <Button.Background>
+                                    <SolidColorBrush Opacity="0"></SolidColorBrush>
+                                </Button.Background>
+                                <Image Source="Assets/arrow.png" Width="60px" RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <RotateTransform Angle="270"/>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </Button>
+                            <Button x:Name="Reverse" Grid.Row="2" Grid.Column="1" Margin="0,20,0,0"  Holding="DriveButtonHoldingEvent" >
+                                <Button.Background>
+                                    <SolidColorBrush Opacity="0"></SolidColorBrush>
+                                </Button.Background>
+                                <Image Source="Assets/arrow.png" Width="60px" RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <RotateTransform Angle="90"/>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </Button>
+                            <Button x:Name="Stop" Grid.Row="1" Grid.Column="1"  Holding="DriveButtonHoldingEvent" Click="DriveButtonOnClick" >
+                                <Button.Background>
+                                    <SolidColorBrush Opacity="0"></SolidColorBrush>
+                                </Button.Background>
+                                <Image Source="Assets/stop.png" Width="60px"/>
+                            </Button>
+                            <Button x:Name="Left" Grid.Row="1" Grid.Column="0" Margin="80,0,0,0"  Holding="DriveButtonHoldingEvent" >
+                                <Button.Background>
+                                    <SolidColorBrush Opacity="0"></SolidColorBrush>
+                                </Button.Background>
+                                <Image Source="Assets/arrow.png" Width="60px" RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <RotateTransform Angle="180"/>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </Button>
+                            <Button x:Name="Right" Grid.Row="1" Grid.Column="2" Margin="0,0,80,0" Holding="DriveButtonHoldingEvent" >
+                                <Button.Background>
+                                    <SolidColorBrush Opacity="0"></SolidColorBrush>
+                                </Button.Background>
+                                <Image Source="Assets/arrow.png" Width="60px"  RenderTransformOrigin="0.5,0.5">
+                                    <Image.RenderTransform>
+                                        <RotateTransform Angle="0"/>
+                                    </Image.RenderTransform>
+                                </Image>
+                            </Button>
                         </Grid>
                     </Grid>
                 </StackPanel>

@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -20,7 +21,9 @@ using aucovei.uwp.Helpers;
 using Windows.Storage.Streams;
 using Windows.UI.Core;
 using Windows.UI.Popups;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
@@ -33,8 +36,9 @@ namespace aucovei.uwp
     public sealed partial class ManualMode : Page
     {
         private MainPage rootPage;
-        ServiceHelper svcHelper;
+        private ServiceHelper svcHelper;
         private CancellationTokenSource tokenSrc;
+        private CancellationTokenSource camButtonToken;
 
         public ManualMode()
         {
@@ -43,6 +47,160 @@ namespace aucovei.uwp
             this.subdescription.Text = $"Manually navigate {App.AppData.ConnectedAucovei.DisplayName}";
             this.svcHelper = new ServiceHelper();
             App.AppData.PropertyChanged += this.AppDataPropertyChanged;
+            this.AddEventListeners();
+        }
+
+        private void AddEventListeners()
+        {
+            this.CamUp.AddHandler(PointerPressedEvent,
+                new PointerEventHandler(this.CameraButtonOnPointerPressed), true);
+            this.CamUp.AddHandler(PointerReleasedEvent,
+                new PointerEventHandler(this.CameraButtonOnPointerReleased), true);
+
+            this.CamDown.AddHandler(PointerPressedEvent,
+                new PointerEventHandler(this.CameraButtonOnPointerPressed), true);
+            this.CamDown.AddHandler(PointerReleasedEvent,
+                new PointerEventHandler(this.CameraButtonOnPointerReleased), true);
+
+            this.CamLeft.AddHandler(PointerPressedEvent,
+                new PointerEventHandler(this.CameraButtonOnPointerPressed), true);
+            this.CamLeft.AddHandler(PointerReleasedEvent,
+                new PointerEventHandler(this.CameraButtonOnPointerReleased), true);
+
+            this.CamRight.AddHandler(PointerPressedEvent,
+                new PointerEventHandler(this.CameraButtonOnPointerPressed), true);
+            this.CamRight.AddHandler(PointerReleasedEvent,
+                new PointerEventHandler(this.CameraButtonOnPointerReleased), true);
+
+
+            this.Forward.AddHandler(PointerPressedEvent,
+                new PointerEventHandler(this.DriveButtonOnPointerPressed), true);
+            this.Forward.AddHandler(PointerReleasedEvent,
+                new PointerEventHandler(this.DriveButtonOnPointerReleased), true);
+
+            this.Reverse.AddHandler(PointerPressedEvent,
+                new PointerEventHandler(this.DriveButtonOnPointerPressed), true);
+            this.Reverse.AddHandler(PointerReleasedEvent,
+                new PointerEventHandler(this.DriveButtonOnPointerReleased), true);
+
+            this.Left.AddHandler(PointerPressedEvent,
+                new PointerEventHandler(this.DriveButtonOnPointerPressed), true);
+            this.Left.AddHandler(PointerReleasedEvent,
+                new PointerEventHandler(this.DriveButtonOnPointerReleased), true);
+
+            this.Right.AddHandler(PointerPressedEvent,
+                new PointerEventHandler(this.DriveButtonOnPointerPressed), true);
+            this.Right.AddHandler(PointerReleasedEvent,
+                new PointerEventHandler(this.DriveButtonOnPointerReleased), true);
+        }
+
+        private async void DriveButtonHoldingEvent(object sender, HoldingRoutedEventArgs e)
+        {
+            Image btn = sender as Image;
+            if (e.HoldingState == Windows.UI.Input.HoldingState.Started)
+            {
+                // FlipImage(btn, true);
+                await this.SendCommandAsync("MoveVehicle", btn.Name, 0);
+            }
+            else
+            {
+                // FlipImage(btn, false);
+                await this.SendCommandAsync("MoveVehicle", "Stop", 0);
+            }
+        }
+
+        private async void DriveButtonOnPointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            Windows.UI.Xaml.Input.Pointer ptr = e.Pointer;
+            var btn = sender as Button;
+            if (ptr.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Mouse)
+            {
+                await this.SendCommandAsync("MoveVehicle", btn.Name, 0);
+            }
+
+            // Prevent most handlers along the event route from handling the same event again.
+            e.Handled = true;
+        }
+
+        private async void DriveButtonOnPointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            Windows.UI.Xaml.Input.Pointer ptr = e.Pointer;
+            var btn = sender as Button;
+            if (ptr.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Mouse)
+            {
+                await this.SendCommandAsync("MoveVehicle", "Stop", 0);
+            }
+
+            // Prevent most handlers along the event route from handling the same event again.
+            e.Handled = true;
+        }
+
+        private async void DriveButtonOnClick(object sender, RoutedEventArgs e)
+        {
+            await this.SendCommandAsync("MoveVehicle", "Stop", 0);
+        }
+
+        private async void CameraButtonOnPointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            Windows.UI.Xaml.Input.Pointer ptr = e.Pointer;
+            var btn = sender as Button;
+            if (ptr.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Mouse)
+            {
+                this.camButtonToken = new CancellationTokenSource();
+                while (!this.camButtonToken.IsCancellationRequested)
+                {
+                    await this.SendCommandAsync("MoveCamera", btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 1000);
+                }
+            }
+
+            // Prevent most handlers along the event route from handling the same event again.
+            e.Handled = true;
+        }
+
+        private void CameraButtonOnPointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            Windows.UI.Xaml.Input.Pointer ptr = e.Pointer;
+            var btn = sender as Button;
+            if (this.camButtonToken != null &&
+                ptr.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Mouse)
+            {
+                this.camButtonToken.Cancel();
+            }
+
+            // Prevent most handlers along the event route from handling the same event again.
+            e.Handled = true;
+        }
+
+        private async void CameraButtonHoldingEvent(object sender, HoldingRoutedEventArgs e)
+        {
+            Image btn = sender as Image;
+            if (e.HoldingState == Windows.UI.Input.HoldingState.Started)
+            {
+                // FlipImage(btn, true);
+                await this.SendCommandAsync("MoveCamera", btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 1000);
+            }
+        }
+
+        private async void CameraButtonClick(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            await this.SendCommandAsync("MoveCamera", btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 100);
+        }
+
+        private async Task SendCommandAsync(string commandName, string data, int delay)
+        {
+            // this.rootPage.NotifyUser($"Command Started: {commandName}", NotifyType.StatusMessage);
+            try
+            {
+                await this.svcHelper.SendCommandAsync(App.AppData.ConnectedAucovei.Id, commandName,
+                    new KeyValuePair<string, string>("data", data));
+
+                await Task.Delay(delay);
+            }
+            catch (Exception ex)
+            {
+                Debug.Write(ex);
+            }
         }
 
         private void AppDataPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -51,7 +209,8 @@ namespace aucovei.uwp
             {
                 if (e.PropertyName.Equals(nameof(App.AppData.IsVideoFeedActive)))
                 {
-                    if (App.AppData.IsVideoFeedActive)
+                    if (this.tokenSrc == null &&
+                        App.AppData.IsVideoFeedActive)
                     {
                         this.tokenSrc = new CancellationTokenSource();
                         this.ReadVideoFramesAsync();
@@ -59,6 +218,7 @@ namespace aucovei.uwp
                     else
                     {
                         this.tokenSrc?.Cancel();
+                        this.tokenSrc = null;
                         this.ContainerGrid.Background = new ImageBrush
                         {
                             ImageSource = new BitmapImage(new
@@ -177,6 +337,7 @@ namespace aucovei.uwp
             if (App.AppData.IsVideoFeedActive)
             {
                 this.tokenSrc?.Cancel();
+                this.tokenSrc = null;
                 this.ContainerGrid.Background = new ImageBrush
                 {
                     ImageSource = new BitmapImage(new
@@ -187,5 +348,7 @@ namespace aucovei.uwp
 
             this.rootPage.NotifyUser(string.Empty, NotifyType.StatusMessage);
         }
+
+
     }
 }
