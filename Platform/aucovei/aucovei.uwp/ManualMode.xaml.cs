@@ -348,7 +348,5 @@ namespace aucovei.uwp
 
             this.rootPage.NotifyUser(string.Empty, NotifyType.StatusMessage);
         }
-
-
     }
 }

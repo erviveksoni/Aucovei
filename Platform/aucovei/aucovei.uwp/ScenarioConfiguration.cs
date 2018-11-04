@@ -22,9 +22,9 @@ namespace aucovei.uwp
         List<Scenario> scenarios = new List<Scenario>
         {
             new Scenario() { Title="Connect", ClassType=typeof(DeviceConnection)},
-            new Scenario() { Title="Add Waypoints", ClassType=typeof(AddWaypoints)},
+            new Scenario() { Title="Waypoint Navigation", ClassType=typeof(AddWaypoints)},
             new Scenario() { Title="Review & Send", ClassType=typeof(SendWaypoints)},
-            new Scenario() { Title="Manual Drive", ClassType=typeof(ManualMode)}
+            new Scenario() { Title="Manual Navigation", ClassType=typeof(ManualMode)}
 
         };
     }
