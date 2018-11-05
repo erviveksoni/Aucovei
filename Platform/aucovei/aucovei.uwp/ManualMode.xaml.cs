@@ -96,15 +96,13 @@ namespace aucovei.uwp
 
         private async void DriveButtonHoldingEvent(object sender, HoldingRoutedEventArgs e)
         {
-            Image btn = sender as Image;
+            var btn = sender as Button;
             if (e.HoldingState == Windows.UI.Input.HoldingState.Started)
             {
-                // FlipImage(btn, true);
                 await this.SendCommandAsync("MoveVehicle", btn.Name, 0);
             }
             else
             {
-                // FlipImage(btn, false);
                 await this.SendCommandAsync("MoveVehicle", "Stop", 0);
             }
         }
@@ -173,11 +171,18 @@ namespace aucovei.uwp
 
         private async void CameraButtonHoldingEvent(object sender, HoldingRoutedEventArgs e)
         {
-            Image btn = sender as Image;
+            var btn = sender as Button;
             if (e.HoldingState == Windows.UI.Input.HoldingState.Started)
             {
-                // FlipImage(btn, true);
-                await this.SendCommandAsync("MoveCamera", btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 1000);
+                this.camButtonToken = new CancellationTokenSource();
+                while (!this.camButtonToken.IsCancellationRequested)
+                {
+                    await this.SendCommandAsync("MoveCamera", btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 1000);
+                }
+            }
+            else
+            {
+                this.camButtonToken.Cancel();
             }
         }
 
