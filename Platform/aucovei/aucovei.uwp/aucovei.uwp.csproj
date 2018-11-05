@@ -236,12 +236,6 @@
       <Version>11.0.2</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\XamlBrewer.Uwp.FloatingContentControl\XamlBrewer.Uwp.FloatingContentControl.csproj">
-      <Project>{06aeebe0-e720-469e-a071-349c2029d846}</Project>
-      <Name>XamlBrewer.Uwp.FloatingContentControl</Name>
-    </ProjectReference>
-  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>
