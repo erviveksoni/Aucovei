@@ -81,6 +81,12 @@ namespace Aucovei.Device.WayPointNavigator
 
             this.NotifyUIEvent(notifyEventArgs);
 
+            this.nextWayPointIndex = -1;
+            this.dummycounter = 0;
+            this.dummyIndex = 0;
+            this.currentPosition = null;
+            this.mockwayPoints = this.GetMockWayPoints();
+
             // first waypoint
             this.nextWayPoint = this.GetNextWayPoint();
             if (this.nextWayPoint == null)
@@ -249,7 +255,7 @@ namespace Aucovei.Device.WayPointNavigator
                 this.turnDirection = Commands.DrivingDirection.Forward;
             }
 
-            this.i++;
+            this.dummyIndex++;
 
             NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
             {
@@ -376,19 +382,24 @@ namespace Aucovei.Device.WayPointNavigator
 
         private int dummycounter = 0;
 
-        private List<GeoCoordinate> mockwayPoints = new List<GeoCoordinate>()
+        private List<GeoCoordinate> mockwayPoints;
+
+        private List<GeoCoordinate> GetMockWayPoints()
         {
-            new GeoCoordinate(17.4550259998007,78.3009775030915),
-            new GeoCoordinate(17.4550259998386,78.3009492527823),
-            new GeoCoordinate(17.4550259998725,78.3009210024732),
-            new GeoCoordinate(17.4550259999024,78.300892752164),
-            new GeoCoordinate(17.4550259999283,78.3008645018549),
-            new GeoCoordinate(17.4550259999502,78.3008362515457),
-            new GeoCoordinate(17.4550259999681,78.3008080012366),
-            new GeoCoordinate(17.4550259999821,78.3007797509274),
-            new GeoCoordinate(17.455025999992,78.3007515006183),
-            new GeoCoordinate(17.455025999998,78.3007232503091),
-        };
+            return mockwayPoints = new List<GeoCoordinate>()
+            {
+                new GeoCoordinate(17.4550259998007, 78.3009775030915),
+                new GeoCoordinate(17.4550259998386, 78.3009492527823),
+                new GeoCoordinate(17.4550259998725, 78.3009210024732),
+                new GeoCoordinate(17.4550259999024, 78.300892752164),
+                new GeoCoordinate(17.4550259999283, 78.3008645018549),
+                new GeoCoordinate(17.4550259999502, 78.3008362515457),
+                new GeoCoordinate(17.4550259999681, 78.3008080012366),
+                new GeoCoordinate(17.4550259999821, 78.3007797509274),
+                new GeoCoordinate(17.455025999992, 78.3007515006183),
+                new GeoCoordinate(17.455025999998, 78.3007232503091)
+            };
+        }
 
         private GeoCoordinate GetDummyPoints()
         {
@@ -407,18 +418,18 @@ namespace Aucovei.Device.WayPointNavigator
             return result;
         }
 
-        private int i = 0;
+        private int dummyIndex = 0;
         GeoCoordinate currentPosition = null;
 
         private void IncrementCoordinates()
         {
             //GeoCoordinate currentPosition = new GeoCoordinate(
-            //    this.currentGpsPosition.Latitude.Value,
-            //    this.currentGpsPosition.Longitude.Value);
+            //    this.CurrentGpsPosition.Latitude.Value,
+            //    this.CurrentGpsPosition.Longitude.Value);
 
-            if (this.i < 19)
+            if (this.dummyIndex < 19)
             {
-                this.i++;
+                this.dummyIndex++;
                 this.currentPosition = this.GetDummyPoints();
             }
             else

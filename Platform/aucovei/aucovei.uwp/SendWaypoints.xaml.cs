@@ -84,34 +84,34 @@ namespace aucovei.uwp
 
         private async void SendWayPoints_Tapped(object sender, Windows.UI.Xaml.Input.TappedRoutedEventArgs e)
         {
-            /*string json = this.GetJsonText();
+            string json = this.GetJsonText();
             if (!string.IsNullOrEmpty(json))
             {
                 json = json.Replace("\r\n", string.Empty).Replace(" ", string.Empty);
-                json = string.Concat(json, "#");
-                //await App.BluetoothManager.SendStringAsync(string.Empty + "#");
-                await Task.Delay(100);
-                //await App.BluetoothManager.SendStringAsync(json);
-                await Task.Delay(1000);
-                this.rootPage.NotifyUser("Waypoints sent!", NotifyType.StatusMessage);
-            }*/
 
-            try
-            {
-                rootPage.ProgressBar(true);
-                int wpcount = App.AppData.ConnectedAucovei.WayPoints.Skip(1).Count();
-                await this.svcHelper.SendCommandAsync(App.AppData.ConnectedAucovei.Id, "DemoRun",
-                    new KeyValuePair<string, string>("data", wpcount.ToString()));
-                this.rootPage.NotifyUser($"Waypoints sent to {App.AppData.ConnectedAucovei.DisplayName}!", NotifyType.StatusMessage);
+                try
+                {
+                    rootPage.ProgressBar(true);
+                    int wpcount = App.AppData.ConnectedAucovei.WayPoints.Skip(1).Count();
+                    await this.svcHelper.SendCommandAsync(App.AppData.ConnectedAucovei.Id, "SendWaypoints",
+                        new KeyValuePair<string, string>("data", json));
+                    this.rootPage.NotifyUser($"Waypoints sent to {App.AppData.ConnectedAucovei.DisplayName}!",
+                        NotifyType.StatusMessage);
+                }
+                catch (Exception uex)
+                {
+                    MessageDialog dlg = new MessageDialog(uex.Message);
+                    rootPage.ShowError(dlg);
+                }
+                finally
+                {
+                    rootPage.ProgressBar(false);
+                }
             }
-            catch (Exception uex)
+            else
             {
-                MessageDialog dlg = new MessageDialog(uex.Message);
+                MessageDialog dlg = new MessageDialog("Invalid waypoint list!");
                 rootPage.ShowError(dlg);
-            }
-            finally
-            {
-                rootPage.ProgressBar(false);
             }
         }
 

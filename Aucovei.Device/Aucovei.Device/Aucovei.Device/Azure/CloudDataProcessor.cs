@@ -492,13 +492,18 @@ namespace Aucovei.Device.Azure
                             var wayPoints = new List<GeoCoordinate>();
                             foreach (var wayPoint in waypointArray)
                             {
-                                var wayPointObject = new GeoCoordinate(
-                                    wayPoint[0].ToObject<double>(),
-                                    wayPoint[1].ToObject<double>());
-                                wayPoints.Add(wayPointObject);
+                                if (double.TryParse(wayPoint[0].ToString(), out var lat) &&
+                                    double.TryParse(wayPoint[1].ToString(), out var lon))
+                                {
+                                    var wayPointObject = new GeoCoordinate(lat, lon);
+                                    wayPoints.Add(wayPointObject);
+                                }
                             }
 
-                            await this.wayPointNavigator.StartWayPointNavigationAsync(wayPoints);
+                            if (wayPoints.Count > 0)
+                            {
+                                await this.wayPointNavigator.StartWayPointNavigationAsync(wayPoints);
+                            }
 
                             return CommandProcessingResult.Success;
                         }
