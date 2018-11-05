@@ -239,7 +239,6 @@ namespace aucovei.uwp
         private async void GetDeviceDelemetryAsync()
         {
             var svcHelper = new ServiceHelper();
-            CancellationTokenSource videoToken = null;
 
             while (!this.tokenSrc.IsCancellationRequested)
             {
@@ -260,44 +259,29 @@ namespace aucovei.uwp
                                 {
                                     App.AppData.IsVideoFeedActive = true;
                                 }
-
-                                //if (this.FloatingContent.Visibility == Visibility.Collapsed)
-                                //{
-                                //    videoToken = new CancellationTokenSource();
-                                // //   this.ReadVideoFramesAsync(videoToken.Token);
-                                //}
                             }
                             else
                             {
-                                videoToken?.Cancel();
                                 if (App.AppData.IsVideoFeedActive)
                                 {
                                     App.AppData.IsVideoFeedActive = false;
                                 }
-
-                                this.FloatingContent.Visibility = Visibility.Collapsed;
                             }
                         }
                         else
                         {
-                            videoToken?.Cancel();
                             if (App.AppData.IsVideoFeedActive)
                             {
                                 App.AppData.IsVideoFeedActive = false;
                             }
-
-                            this.FloatingContent.Visibility = Visibility.Collapsed;
                         }
                     }
                     else
                     {
-                        videoToken?.Cancel();
                         if (App.AppData.IsVideoFeedActive)
                         {
                             App.AppData.IsVideoFeedActive = false;
                         }
-
-                        this.FloatingContent.Visibility = Visibility.Collapsed;
                     }
                 }
                 catch
@@ -310,82 +294,9 @@ namespace aucovei.uwp
                 }
             }
 
-            videoToken?.Cancel();
-            this.FloatingContent.Visibility = Visibility.Collapsed;
-            this.PreviewImage.Source = null;
             if (App.AppData.IsVideoFeedActive)
             {
                 App.AppData.IsVideoFeedActive = false;
-            }
-        }
-
-        private async void ReadVideoFramesAsync(CancellationToken cameraToken)
-        {
-            try
-            {
-                if (cameraToken.IsCancellationRequested)
-                {
-                    return;
-                }
-
-                string wsUri = $"{App.WebSocketEndpoint}{App.AppData.ConnectedAucovei.Id}";
-                using (var socket = new ClientWebSocket())
-                {
-                    await socket.ConnectAsync(new Uri(wsUri), cameraToken);
-
-                    while (socket.State == WebSocketState.Open)
-                    {
-                        try
-                        {
-                            if (cameraToken.IsCancellationRequested)
-                            {
-                                break;
-                            }
-
-                            var buffer = new ArraySegment<Byte>(new Byte[40960]);
-                            WebSocketReceiveResult rcvResult = await socket.ReceiveAsync(buffer, cameraToken);
-                            if (rcvResult.MessageType == WebSocketMessageType.Binary)
-                            {
-                                List<byte> data = new List<byte>(buffer.Take(rcvResult.Count));
-                                while (rcvResult.EndOfMessage == false)
-                                {
-                                    rcvResult = await socket.ReceiveAsync(buffer, CancellationToken.None);
-                                    data.AddRange(buffer.Take(rcvResult.Count));
-                                }
-
-                                var task = this.Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
-                                {
-                                    BitmapImage bitmap = new BitmapImage();
-                                    using (InMemoryRandomAccessStream stream = new InMemoryRandomAccessStream())
-                                    {
-                                        await stream.WriteAsync(data.ToArray().AsBuffer());
-                                        stream.Seek(0);
-                                        await bitmap.SetSourceAsync(stream);
-                                    }
-
-                                    this.PreviewImage.Source = bitmap;
-
-                                    RotateTransform transform = new RotateTransform();
-                                    transform.CenterX = this.ImageViewbox.Width / 2;
-                                    transform.CenterY = this.ImageViewbox.Height / 2;
-                                    transform.Angle = 270;
-                                    this.ImageViewbox.RenderTransform = transform;
-
-                                    this.FloatingContent.Visibility = Visibility.Visible;
-                                });
-                            }
-                        }
-                        catch
-                        {
-                            await Task.Delay(TimeSpan.FromSeconds(1));
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1));
-                this.ReadVideoFramesAsync(cameraToken);
             }
         }
     }
