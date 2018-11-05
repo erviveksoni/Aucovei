@@ -67,7 +67,7 @@ namespace Aucovei.Device.Arduino
 
         private async void I2CReadTimer_Tick(object sender, object e)
         {
-            var response = new byte[10];
+            var response = new byte[20];
 
             try
             {
@@ -78,7 +78,7 @@ namespace Aucovei.Device.Arduino
                     this.OnStateChanged();
                 }
 
-                var datArray = Encoding.ASCII.GetString(response, 0, 10).ToCharArray(); // Converte  Byte to Char
+                var datArray = Encoding.ASCII.GetString(response, 0, 20).ToCharArray(); // Converte  Byte to Char
                 var data = new string(datArray);
                 data = data.Trim().TrimEnd('?');
                 if (!string.IsNullOrEmpty(data))

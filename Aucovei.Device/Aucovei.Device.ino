@@ -1,5 +1,6 @@
 #include <Wire.h>  // Library which contains functions to have I2C Communication
 #include "TimerOne.h"
+#include <SimpleDHT.h>
 
 #define SLAVEADDRESS 0x40 // Define the I2C address to Communicate to Uno
 
@@ -15,6 +16,7 @@
 #define FrontLEDPin 11
 #define RearLEDPin 12
 #define BuzzerPin 16
+#define PinDHT11 9
 
 #define STOP 1
 #define TURN_FORWARD 2
@@ -56,6 +58,9 @@ enum command
 
 unsigned int counter = 0;
 int rotationPerSecond = 0; // this data is sent to PI
+byte temperature = 0;
+byte humidity = 0;
+SimpleDHT11 dht11(PinDHT11);
 
 void incrementcount()  // counts from the speed sensor
 {
@@ -87,7 +92,18 @@ void setup()
 }
 
 void loop() {
-  delay(100);
+  // DHT11 sampling rate is 1HZ.
+  delay(1500);
+
+  int err = SimpleDHTErrSuccess;
+  if ((err = dht11.read(&temperature, &humidity, NULL)) != SimpleDHTErrSuccess) {
+    Serial.print("Read DHT11 failed, err=");
+    Serial.println(err);
+    delay(1000);
+  }
+
+  // Serial.print((double)temperature); Serial.print(" *C, ");
+  // Serial.print((double)humidity); Serial.println(" H");
 }
 
 void setuplogic() {
@@ -254,8 +270,12 @@ void stopVehicle(int f)
 }
 
 void I2CRequest() {
-  char wiredata[10];
+  char wiredata[20];
   String data =  String(rotationPerSecond);
+  data.concat("|");
+  data.concat(String((double)temperature));
+  data.concat("|");
+  data.concat(String((double)humidity));
   data.toCharArray(wiredata, data.length() + 1);
   Wire.write(wiredata); // return data to PI
 }

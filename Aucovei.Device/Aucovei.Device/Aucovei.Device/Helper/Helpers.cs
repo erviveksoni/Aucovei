@@ -62,10 +62,32 @@ namespace Aucovei.Device.Helper
         public static double ConvertRPSToMeterPerSecond(string data)
         {
             const double wheelradiusMeters = 0.0315;
-            if (int.TryParse(data, out var rps))
+            var dataparts = data.Split('|');
+            if (dataparts.Length < 1)
+            {
+                return 0;
+            }
+
+            if (int.TryParse(dataparts[0], out var rps))
             {
                 var speed = wheelradiusMeters * (2 * Math.PI) * (rps);
                 return Math.Round(speed, 2);
+            }
+
+            return 0;
+        }
+
+        public static double ReadTemperature(string data)
+        {
+            var dataparts = data.Split('|');
+            if (dataparts.Length < 2)
+            {
+                return 0;
+            }
+
+            if (double.TryParse(dataparts[1], out var temp))
+            {
+                return Math.Round(temp, 2);
             }
 
             return 0;

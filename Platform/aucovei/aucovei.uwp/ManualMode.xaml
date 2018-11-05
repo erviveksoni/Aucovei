@@ -121,7 +121,7 @@
                                 <Image Source="Assets/center.png" Width="60px" RenderTransformOrigin="0.5,0.5">
                                 </Image>
                             </Button>
-                            <Button x:Name="CamLeft" Grid.Row="1" Grid.Column="0" Margin="80,0,0,0" Holding="CameraButtonHoldingEvent" >
+                            <Button x:Name="CamLeft" Grid.Row="1" Grid.Column="0" Margin="90,0,0,0" Holding="CameraButtonHoldingEvent" >
                                 <Button.Background>
                                     <SolidColorBrush Opacity="0"></SolidColorBrush>
                                 </Button.Background>
@@ -179,7 +179,7 @@
                                 </Button.Background>
                                 <Image Source="Assets/stop.png" Width="60px"/>
                             </Button>
-                            <Button x:Name="Left" Grid.Row="1" Grid.Column="0" Margin="80,0,0,0"  Holding="DriveButtonHoldingEvent" >
+                            <Button x:Name="Left" Grid.Row="1" Grid.Column="0" Margin="90,0,0,0"  Holding="DriveButtonHoldingEvent" >
                                 <Button.Background>
                                     <SolidColorBrush Opacity="0"></SolidColorBrush>
                                 </Button.Background>

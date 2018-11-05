@@ -47,6 +47,7 @@ namespace Aucovei.Device
         private GpsInformation.GpsStatus currentGpsStatus;
         private HMC5883L compass;
         private CommandProcessor.CommandProcessor commandProcessor;
+        private double temperature;
 
         public MainPage()
         {
@@ -238,6 +239,7 @@ namespace Aucovei.Device
         private void Arduino_I2CDataReceived(object sender, Arduino.Arduino.I2CDataReceivedEventArgs e)
         {
             this.speedInmPerSecond = Helper.Helpers.ConvertRPSToMeterPerSecond(e.Data.ToString());
+            this.temperature = Helper.Helpers.ReadTemperature(e.Data.ToString());
             this.UpdateDisplayWithSpeed();
         }
 
@@ -324,6 +326,7 @@ namespace Aucovei.Device
                      var speedString = this.speedInmPerSecond.ToString(CultureInfo.InvariantCulture);
                      // this.displayManager.AppendText(speedString, 80, 3);
                      this.SpeedInfoValue.Text = speedString;
+                     this.TemperatureInfoValue.Text = temperature.ToString(CultureInfo.InvariantCulture);
                  });
         }
 

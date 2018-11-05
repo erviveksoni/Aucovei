@@ -185,9 +185,14 @@ namespace Aucovei.Device.Azure
                     this.reportedTelemetry != null)
                 {
                     monitorData.DeviceId = Constants.DeviceId;
-                    monitorData.Temperature = 45;
 
-                    string value = JsonConvert.SerializeObject(this.reportedTelemetry["RoverSpeed"] ?? string.Empty);
+                    string value = JsonConvert.SerializeObject(this.reportedTelemetry["Temperature"] ?? string.Empty);
+                    if (double.TryParse(value, out double temp))
+                    {
+                        monitorData.Temperature = temp;
+                    }
+
+                    value = JsonConvert.SerializeObject(this.reportedTelemetry["RoverSpeed"] ?? string.Empty);
                     if (double.TryParse(value, out double val))
                     {
                         monitorData.Speed = val;
@@ -646,7 +651,17 @@ namespace Aucovei.Device.Azure
                             true,
                             out var direction))
                     {
-                        string drivingdirection = Helper.Helpers.MapDrivingDirectionToCommand((Commands.DrivingDirection)direction);
+                        var cmddir = (Commands.DrivingDirection)direction;
+                        if (cmddir != Commands.DrivingDirection.Stop)
+                        {
+                            await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedNormal);
+                        }
+                        else
+                        {
+                            await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedStop);
+                        }
+
+                        string drivingdirection = Helper.Helpers.MapDrivingDirectionToCommand(cmddir);
                         await this.commandProcessor.ExecuteCommandAsync(drivingdirection);
 
                         return CommandProcessingResult.Success;

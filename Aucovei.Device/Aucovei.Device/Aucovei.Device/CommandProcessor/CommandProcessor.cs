@@ -5,10 +5,10 @@ using Aucovei.Device.Helper;
 using Aucovei.Device.RfcommService;
 using Aucovei.Device.Services;
 using Aucovei.Device.Web;
+using Newtonsoft.Json.Linq;
 using Windows.Devices.Gpio;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
-using Newtonsoft.Json.Linq;
 
 namespace Aucovei.Device.CommandProcessor
 {
@@ -24,7 +24,6 @@ namespace Aucovei.Device.CommandProcessor
         private bool isAutodriveTimerActive;
         private HCSR04 ultrasonicsensor;
         private bool wasObstacleDetected;
-        private double speedInmPerSecond;
         private bool isCameraActive;
 
         public delegate void NotifyDataEventHandler(object sender, NotificationDataEventArgs e);
@@ -52,10 +51,12 @@ namespace Aucovei.Device.CommandProcessor
         {
             try
             {
-                this.speedInmPerSecond = Helpers.ConvertRPSToMeterPerSecond(e.Data.ToString());
+                var speedInmPerSecond = Helpers.ConvertRPSToMeterPerSecond(e.Data.ToString());
+                var temperature = Helpers.ReadTemperature(e.Data.ToString());
                 dynamic telemetry = new System.Dynamic.ExpandoObject();
+                telemetry.Temperature = temperature;
                 telemetry.IsCameraActive = this.isCameraActive;
-                telemetry.RoverSpeed = this.speedInmPerSecond;
+                telemetry.RoverSpeed = speedInmPerSecond;
                 telemetry.DeviceIp = this.isCameraActive ? Helpers.GetIPAddress()?.ToString() : null;
 
                 this.OnNotifyDataEventHandler("AZURE", JObject.FromObject(telemetry));
