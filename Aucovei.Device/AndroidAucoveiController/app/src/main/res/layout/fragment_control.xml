@@ -96,7 +96,7 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:layout_alignParentBottom="true"
-            android:layout_marginLeft="770px"
+            android:layout_marginLeft="900px"
             android:layout_marginBottom="10px"
             android:background="@null"
             android:contentDescription="sdsd"
@@ -107,10 +107,10 @@
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:layout_alignParentBottom="true"
-            android:layout_marginLeft="1000px"
+            android:layout_marginLeft="1200px"
             android:layout_marginBottom="10px"
             android:background="@null"
-            android:contentDescription="sdsd"
+            android:contentDescription=""
             android:src="@drawable/imgbtn_cameraon" />
 
         <ImageButton
