@@ -441,15 +441,17 @@ namespace Aucovei.Device.Azure
                     if (statusstring != null &&
                         int.TryParse(statusstring.ToString(), out count))
                     {
-                        await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedNormal);
                         await this.commandProcessor.ExecuteCommandAsync(Commands.DriveForward);
-
+                        await this.commandProcessor.ExecuteCommandAsync(Commands.CameraLedOn);
+                    
                         while (count > 0)
                         {
                             count--;
                             await Task.Delay(500);
                         }
 
+                        await this.commandProcessor.ExecuteCommandAsync(Commands.Horn);
+                        await this.commandProcessor.ExecuteCommandAsync(Commands.CameraLedOff);
                         await this.commandProcessor.ExecuteCommandAsync(Commands.DriveStop);
 
                         return CommandProcessingResult.Success;
@@ -657,15 +659,6 @@ namespace Aucovei.Device.Azure
                             out var direction))
                     {
                         var cmddir = (Commands.DrivingDirection)direction;
-                        if (cmddir != Commands.DrivingDirection.Stop)
-                        {
-                            await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedNormal);
-                        }
-                        else
-                        {
-                            await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedStop);
-                        }
-
                         string drivingdirection = Helper.Helpers.MapDrivingDirectionToCommand(cmddir);
                         await this.commandProcessor.ExecuteCommandAsync(drivingdirection);
 

@@ -11,6 +11,7 @@ using Aucovei.Device.RfcommService;
 using Aucovei.Device.Services;
 using Aucovei.Device.Web;
 using Windows.Devices.Gpio;
+using Windows.Networking.Connectivity;
 using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
@@ -182,6 +183,8 @@ namespace Aucovei.Device
 
                 cloudDataProcessor.IsTelemetryActive = true;
 
+                NetworkInformation.NetworkStatusChanged += this.NetworkInformation_NetworkStatusChanged;
+
                 this.WriteToOutputTextBlock("Initialization complete...");
                 this.Speak("Initialization complete");
             }
@@ -300,6 +303,21 @@ namespace Aucovei.Device
         private void Compasstimer_Tick(object sender, object e)
         {
             this.UpdateUiButtonStates("compass", Commands.ToggleCommandState.On);
+        }
+
+        private async void NetworkInformation_NetworkStatusChanged(object sender)
+        {
+            var internetprofile = NetworkInformation.GetInternetConnectionProfile();
+            if (internetprofile == null)
+            {
+                await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedStop);
+
+                await this.commandProcessor.ExecuteCommandAsync(Commands.DriveStop);
+
+                this.WriteToOutputTextBlock("No WIFI network available...");
+
+                this.DisplayNetworkInfo();
+            }
         }
 
         private void DisplayNetworkInfo()

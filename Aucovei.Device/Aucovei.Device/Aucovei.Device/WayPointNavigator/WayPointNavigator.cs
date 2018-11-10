@@ -187,19 +187,15 @@ namespace Aucovei.Device.WayPointNavigator
                 switch (this.turnDirection)
                 {
                     case Commands.DrivingDirection.Forward:
-                        await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedNormal);
                         await this.commandProcessor.ExecuteCommandAsync(Helpers.MapDrivingDirectionToCommand(this.turnDirection));
                         break;
                     case Commands.DrivingDirection.Reverse:
-                        await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedNormal);
                         await this.commandProcessor.ExecuteCommandAsync(Helpers.MapDrivingDirectionToCommand(this.turnDirection));
                         break;
                     case Commands.DrivingDirection.Left:
-                        await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedNormal);
                         await this.commandProcessor.ExecuteCommandAsync(Helpers.MapDrivingDirectionToCommand(this.turnDirection));
                         break;
                     case Commands.DrivingDirection.Right:
-                        await this.commandProcessor.ExecuteCommandAsync(Commands.SpeedNormal);
                         await this.commandProcessor.ExecuteCommandAsync(Helpers.MapDrivingDirectionToCommand(this.turnDirection));
                         break;
                 }

@@ -26,7 +26,7 @@ namespace Aucovei.Device
         public const int LedPin = 26;
         public const int EchoPin = 12;
 
-        public const double SafeDistanceCm = 50.0;
+        public const double SafeDistanceCm = 40.0;
 
         public const int GpsBaudRate = 9600;
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using Aucovei.Device.Helper;
 using Aucovei.Device.RfcommService;
@@ -8,7 +9,6 @@ using Aucovei.Device.Web;
 using Newtonsoft.Json.Linq;
 using Windows.Devices.Gpio;
 using Windows.UI.Core;
-using Windows.UI.Xaml;
 
 namespace Aucovei.Device.CommandProcessor
 {
@@ -20,11 +20,10 @@ namespace Aucovei.Device.CommandProcessor
         private HttpServer httpServer;
         private PanTiltServo panTiltServo;
         private GpioPin cameraLedPin;
-        private DispatcherTimer ultrasonictimer;
-        private bool isAutodriveTimerActive;
         private HCSR04 ultrasonicsensor;
         private bool wasObstacleDetected;
         private bool isCameraActive;
+        private CancellationTokenSource ultrasonicTimerToken;
 
         public delegate void NotifyDataEventHandler(object sender, NotificationDataEventArgs e);
 
@@ -77,16 +76,10 @@ namespace Aucovei.Device.CommandProcessor
 
         private void InitializeDistanceSensor()
         {
-            if (this.ultrasonictimer != null &&
-                this.ultrasonictimer.IsEnabled)
-            {
-                this.ultrasonictimer.Stop();
-            }
-
-            this.isAutodriveTimerActive = true;
-            this.ultrasonictimer = new DispatcherTimer();
-            this.ultrasonictimer.Tick += this.Ultrasonictimer_Tick;
-            this.ultrasonictimer.Interval = new TimeSpan(0, 0, 0, 0, 200);
+            this.ultrasonicTimerToken?.Cancel();
+            this.ultrasonicTimerToken = new CancellationTokenSource();
+            this.wasObstacleDetected = false;
+            this.UltrasonictimerLoopAsync();
         }
 
         public async Task ExecuteCommandAsync(string commandText, object commandData = null)
@@ -95,6 +88,8 @@ namespace Aucovei.Device.CommandProcessor
             {
                 case Commands.DriveForward:
                     {
+                        this.arduino.SendCommand(Commands.SpeedNormalValue);
+
                         this.arduino.SendCommand(Commands.DriveForwardValue);
                         this.displayManager.AppendImage(DisplayImages.TopArrow, 0, 3);
                         this.displayManager.AppendText("Drive", 19, 3);
@@ -104,6 +99,8 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveReverse:
                     {
+                        this.arduino.SendCommand(Commands.SpeedNormalValue);
+
                         this.playbackService.ChangeMediaSource(PlaybackService.SoundFiles.CensorBeep);
                         this.playbackService.PlaySound();
 
@@ -116,19 +113,21 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveLeft:
                     {
+                        this.arduino.SendCommand(Commands.SpeedSlowValue);
+
                         this.arduino.SendCommand(Commands.DriveLeftValue);
                         this.displayManager.AppendImage(DisplayImages.LeftArrow, 0, 3);
                         this.displayManager.AppendText("Drive", 19, 3);
-                        //this.UpdateDisplayWithSpeed();
 
                         break;
                     }
                 case Commands.DriveRight:
                     {
+                        this.arduino.SendCommand(Commands.SpeedSlowValue);
+
                         this.arduino.SendCommand(Commands.DriveRightValue);
                         this.displayManager.AppendImage(DisplayImages.RightArrow, 0, 3);
                         this.displayManager.AppendText("Drive", 19, 3);
-                        //this.UpdateDisplayWithSpeed();
 
                         break;
                     }
@@ -143,6 +142,8 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveReverseLeft:
                     {
+                        this.arduino.SendCommand(Commands.SpeedNormalValue);
+
                         this.arduino.SendCommand(Commands.DriveReverseLeftValue);
                         this.displayManager.AppendImage(DisplayImages.LeftArrow, 0, 3);
                         this.displayManager.AppendText("Drive", 19, 3);
@@ -152,6 +153,8 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveReverseRight:
                     {
+                        this.arduino.SendCommand(Commands.SpeedNormalValue);
+
                         this.arduino.SendCommand(Commands.DriveReverseRightValue);
                         this.displayManager.AppendImage(DisplayImages.RightArrow, 0, 3);
                         this.displayManager.AppendText("Drive", 19, 3);
@@ -161,15 +164,14 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveAutoModeOn:
                     {
-                        // set speed to slow for auto mode
-                        this.arduino.SendCommand(Commands.SpeedSlowValue);
-
                         await TaskHelper.DispatchAsync(CoreDispatcherPriority.Normal, () =>
                         {
+                            Task.FromResult(true);
+
                             this.InitializeDistanceSensor();
-                            this.ultrasonictimer.Start();
                         });
 
+                        this.arduino.SendCommand(Commands.SpeedNormalValue);
                         this.arduino.SendCommand(Commands.DriveForwardValue);
 
                         this.displayManager.AppendImage(DisplayImages.Logo_16_16, 0, 1);
@@ -187,18 +189,14 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveAutoModeOff:
                     {
-                        this.isAutodriveTimerActive = false;
-
                         await TaskHelper.DispatchAsync(CoreDispatcherPriority.Normal, () =>
                         {
-                            this.ultrasonictimer?.Stop();
+                            this.ultrasonicTimerToken?.Cancel();
                         });
 
                         this.displayManager.ClearRow(1);
                         this.arduino.SendCommand(Commands.DriveStopValue);
-
-                        // set speed normal when exiting auto mode
-                        this.arduino.SendCommand(Commands.SpeedNormalValue);
+                        this.arduino.SendCommand(Commands.SpeedStopValue);
 
                         this.Speak("Autonomous mode off!");
                         NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
@@ -364,42 +362,25 @@ namespace Aucovei.Device.CommandProcessor
             });
         }
 
-        private async void Ultrasonictimer_Tick(object sender, object e)
+        private async void UltrasonictimerLoopAsync()
         {
-            try
+            while (!this.ultrasonicTimerToken.IsCancellationRequested)
             {
-                // for additional safety against timer misbehaviour
-                if (!this.isAutodriveTimerActive)
+                try
                 {
-                    return;
-                }
-
-                var distance = this.ultrasonicsensor.GetDistance(1000);
-                if (distance.Centimeters < Constants.SafeDistanceCm)
-                {
-                    NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
+                    var distance = this.ultrasonicsensor.GetDistance(1000);
+                    if (distance.Centimeters < Constants.SafeDistanceCm)
                     {
-                        NotificationType = NotificationType.Console,
-                        Data = "OBSTACLE in " + distance.Centimeters + "  cm"
-                    };
-
-                    this.NotifyUIEvent(notifyEventArgs);
-
-                    if (!this.wasObstacleDetected) // new obstacle. Reverse first!
-                    {
-                        this.wasObstacleDetected = true;
-                        notifyEventArgs = new NotifyUIEventArgs()
+                        NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
                         {
                             NotificationType = NotificationType.Console,
-                            Data = "Reversing left..."
+                            Data = "OBSTACLE in " + distance.Centimeters + "  cm"
                         };
 
                         this.NotifyUIEvent(notifyEventArgs);
 
-                        await this.ExecuteCommandAsync(Commands.DriveReverseLeft);
-                    }
-                    else if (this.wasObstacleDetected) // we are still seing the obstacle to reverse left
-                    {
+                        this.wasObstacleDetected = true;
+
                         notifyEventArgs = new NotifyUIEventArgs()
                         {
                             NotificationType = NotificationType.Console,
@@ -409,27 +390,44 @@ namespace Aucovei.Device.CommandProcessor
                         this.NotifyUIEvent(notifyEventArgs);
 
                         await this.ExecuteCommandAsync(Commands.DriveReverse);
+
+                        await Task.Delay(TimeSpan.FromMilliseconds(500));
+
+                        await this.ExecuteCommandAsync(Commands.DriveReverseLeft);
+
+                        await Task.Delay(TimeSpan.FromMilliseconds(1000));
+                    }
+                    else if (this.wasObstacleDetected)
+                    {
+                        this.wasObstacleDetected = false;
+
+                        NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
+                        {
+                            NotificationType = NotificationType.Console,
+                            Data = "Rover at safe distance..."
+                        };
+
+                        this.NotifyUIEvent(notifyEventArgs);
+
+                        await this.ExecuteCommandAsync(Commands.DriveForward);
+                    }
+                    else
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(50));
                     }
                 }
-                else if (this.wasObstacleDetected)
+                catch (Exception ex)
                 {
-                    this.wasObstacleDetected = false;
+                    Debug.Write(ex);
+
                     NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
                     {
                         NotificationType = NotificationType.Console,
-                        Data = "Rover at safe distance..."
+                        Data = $"Autonomous mode error... {ex.Message}"
                     };
 
                     this.NotifyUIEvent(notifyEventArgs);
-
-                    await this.ExecuteCommandAsync(Commands.DriveForward);
                 }
-            }
-            catch (Exception ex)
-            {
-                Debug.Write(ex);
-
-                throw;
             }
         }
 
@@ -446,6 +444,7 @@ namespace Aucovei.Device.CommandProcessor
                     this.arduino?.Dispose();
                     this.cameraLedPin?.Dispose();
                     this.displayManager?.Dispose();
+                    this.ultrasonicTimerToken?.Dispose();
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
