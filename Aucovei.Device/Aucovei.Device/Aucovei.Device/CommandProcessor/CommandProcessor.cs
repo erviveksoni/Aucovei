@@ -164,13 +164,7 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveAutoModeOn:
                     {
-                        await TaskHelper.DispatchAsync(CoreDispatcherPriority.Normal, () =>
-                        {
-                            Task.FromResult(true);
-
-                            this.InitializeDistanceSensor();
-                        });
-
+                        this.InitializeDistanceSensor();
                         this.arduino.SendCommand(Commands.SpeedNormalValue);
                         this.arduino.SendCommand(Commands.DriveForwardValue);
 
@@ -395,7 +389,7 @@ namespace Aucovei.Device.CommandProcessor
 
                         await this.ExecuteCommandAsync(Commands.DriveReverseLeft);
 
-                        await Task.Delay(TimeSpan.FromMilliseconds(1000));
+                        await Task.Delay(TimeSpan.FromMilliseconds(500));
                     }
                     else if (this.wasObstacleDetected)
                     {

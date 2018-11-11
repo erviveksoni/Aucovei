@@ -75,8 +75,6 @@ namespace Aucovei.Device
 
                 this.panTiltServo = new PanTiltServo();
 
-                this.InitializeVoiceCommands();
-
                 this.playbackService = new PlaybackService();
             }
             catch (Exception ex)
@@ -158,9 +156,6 @@ namespace Aucovei.Device
                 }
                 this.displayManager.AppendText(">Started Rfcomm Svc...", 5, 3);
 
-                this.WriteToOutputTextBlock("Initializing voice commands...");
-                this.voiceController.Initialize();
-
                 this.WriteToOutputTextBlock("Initializing waypoint navigator...");
                 WayPointNavigator.WayPointNavigator wayPointNavigator = new WayPointNavigator.WayPointNavigator(this.gpsInformation, this.compass, this.commandProcessor);
                 wayPointNavigator.NotifyUIEventHandler += this.NotifyUIEventHandler;
@@ -182,6 +177,10 @@ namespace Aucovei.Device
                 this.displayManager.AppendImage(DisplayImages.BluetoothDisconnected, 0, 1);
 
                 cloudDataProcessor.IsTelemetryActive = true;
+
+                this.InitializeVoiceCommands();
+                this.WriteToOutputTextBlock("Initializing voice commands...");
+                this.voiceController.Initialize();
 
                 NetworkInformation.NetworkStatusChanged += this.NetworkInformation_NetworkStatusChanged;
 

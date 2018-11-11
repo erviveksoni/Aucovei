@@ -103,6 +103,7 @@
       <DependentUpon>DeviceConnection.xaml</DependentUpon>
     </Compile>
     <Compile Include="Haversine.cs" />
+    <Compile Include="Helpers\AzureRetryHelper.cs" />
     <Compile Include="Helpers\ServiceHelper.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>

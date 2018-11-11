@@ -10,6 +10,7 @@
 //*********************************************************
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -39,6 +40,13 @@ namespace aucovei.uwp
         private ServiceHelper svcHelper;
         private CancellationTokenSource tokenSrc;
         private CancellationTokenSource camButtonToken;
+        private CancellationTokenSource commandToken;
+
+
+        private ConcurrentQueue<Tuple<string, string, int>> commandQueue;
+        private const string MoveVehicle = "MoveVehicle";
+        private const string MoveCamera = "MoveCamera";
+        private const string StopVehicle = "Stop";
 
         public ManualMode()
         {
@@ -48,6 +56,10 @@ namespace aucovei.uwp
             this.svcHelper = new ServiceHelper();
             App.AppData.PropertyChanged += this.AppDataPropertyChanged;
             this.AddEventListeners();
+            this.commandQueue = new ConcurrentQueue<Tuple<string, string, int>>();
+
+            this.commandToken = new CancellationTokenSource();
+            this.SendCommandAsync(null, null, 0);
         }
 
         private void AddEventListeners()
@@ -94,51 +106,51 @@ namespace aucovei.uwp
                 new PointerEventHandler(this.DriveButtonOnPointerReleased), true);
         }
 
-        private async void DriveButtonHoldingEvent(object sender, HoldingRoutedEventArgs e)
+        private void DriveButtonHoldingEvent(object sender, HoldingRoutedEventArgs e)
         {
             var btn = sender as Button;
             if (e.HoldingState == Windows.UI.Input.HoldingState.Started)
             {
-                await this.SendCommandAsync("MoveVehicle", btn.Name, 0);
+                this.commandQueue.Enqueue(Tuple.Create(MoveVehicle, btn.Name, 10));
             }
             else
             {
-                await this.SendCommandAsync("MoveVehicle", "Stop", 0);
+                this.commandQueue.Enqueue(Tuple.Create(MoveVehicle, StopVehicle, 10));
             }
         }
 
-        private async void DriveButtonOnPointerPressed(object sender, PointerRoutedEventArgs e)
+        private void DriveButtonOnPointerPressed(object sender, PointerRoutedEventArgs e)
         {
             Windows.UI.Xaml.Input.Pointer ptr = e.Pointer;
             var btn = sender as Button;
             if (ptr.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Mouse)
             {
-                await this.SendCommandAsync("MoveVehicle", btn.Name, 0);
+                this.commandQueue.Enqueue(Tuple.Create(MoveVehicle, btn.Name, 10));
             }
 
             // Prevent most handlers along the event route from handling the same event again.
             e.Handled = true;
         }
 
-        private async void DriveButtonOnPointerReleased(object sender, PointerRoutedEventArgs e)
+        private void DriveButtonOnPointerReleased(object sender, PointerRoutedEventArgs e)
         {
             Windows.UI.Xaml.Input.Pointer ptr = e.Pointer;
             var btn = sender as Button;
             if (ptr.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Mouse)
             {
-                await this.SendCommandAsync("MoveVehicle", "Stop", 0);
+                this.commandQueue.Enqueue(Tuple.Create(MoveVehicle, StopVehicle, 10));
             }
 
             // Prevent most handlers along the event route from handling the same event again.
             e.Handled = true;
         }
 
-        private async void DriveButtonOnClick(object sender, RoutedEventArgs e)
+        private void DriveButtonOnClick(object sender, RoutedEventArgs e)
         {
-            await this.SendCommandAsync("MoveVehicle", "Stop", 0);
+            this.commandQueue.Enqueue(Tuple.Create(MoveVehicle, StopVehicle, 10));
         }
 
-        private async void CameraButtonOnPointerPressed(object sender, PointerRoutedEventArgs e)
+        private void CameraButtonOnPointerPressed(object sender, PointerRoutedEventArgs e)
         {
             Windows.UI.Xaml.Input.Pointer ptr = e.Pointer;
             var btn = sender as Button;
@@ -147,7 +159,7 @@ namespace aucovei.uwp
                 this.camButtonToken = new CancellationTokenSource();
                 while (!this.camButtonToken.IsCancellationRequested)
                 {
-                    await this.SendCommandAsync("MoveCamera", btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 1000);
+                    this.commandQueue.Enqueue(Tuple.Create(MoveCamera, btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 1000));
                 }
             }
 
@@ -169,7 +181,7 @@ namespace aucovei.uwp
             e.Handled = true;
         }
 
-        private async void CameraButtonHoldingEvent(object sender, HoldingRoutedEventArgs e)
+        private void CameraButtonHoldingEvent(object sender, HoldingRoutedEventArgs e)
         {
             var btn = sender as Button;
             if (e.HoldingState == Windows.UI.Input.HoldingState.Started)
@@ -177,7 +189,7 @@ namespace aucovei.uwp
                 this.camButtonToken = new CancellationTokenSource();
                 while (!this.camButtonToken.IsCancellationRequested)
                 {
-                    await this.SendCommandAsync("MoveCamera", btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 1000);
+                    this.commandQueue.Enqueue(Tuple.Create(MoveCamera, btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 1000));
                 }
             }
             else
@@ -186,25 +198,40 @@ namespace aucovei.uwp
             }
         }
 
-        private async void CameraButtonClick(object sender, RoutedEventArgs e)
+        private void CameraButtonClick(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
-            await this.SendCommandAsync("MoveCamera", btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 100);
+            this.commandQueue.Enqueue(Tuple.Create(MoveCamera, btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 100));
         }
 
-        private async Task SendCommandAsync(string commandName, string data, int delay)
+        private async void SendCommandAsync(string commandName, string data, int delay)
         {
             // this.rootPage.NotifyUser($"Command Started: {commandName}", NotifyType.StatusMessage);
-            try
-            {
-                await this.svcHelper.SendCommandAsync(App.AppData.ConnectedAucovei.Id, commandName,
-                    new KeyValuePair<string, string>("data", data));
 
-                await Task.Delay(delay);
-            }
-            catch (Exception ex)
+            while (!this.commandToken.IsCancellationRequested)
             {
-                Debug.Write(ex);
+                int duration = 100;
+                try
+                {
+                    Tuple<string, string, int> cmd;
+                    if (this.commandQueue.TryDequeue(out cmd))
+                    {
+                        Func<Task> appFunction = () => this.svcHelper.SendCommandAsync(App.AppData.ConnectedAucovei.Id, cmd.Item1,
+                            new KeyValuePair<string, string>("data", cmd.Item2));
+
+                        await AzureRetryHelper.OperationWithBasicRetryAsync(appFunction);
+
+                        duration = cmd.Item3;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.Write(ex);
+                }
+                finally
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(duration));
+                }
             }
         }
 
@@ -338,6 +365,9 @@ namespace aucovei.uwp
 
                 return;
             }
+
+            this.commandToken?.Cancel();
+            this.commandQueue?.Clear();
 
             if (App.AppData.IsVideoFeedActive)
             {

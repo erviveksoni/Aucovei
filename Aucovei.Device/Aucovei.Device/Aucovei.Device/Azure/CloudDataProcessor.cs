@@ -43,6 +43,9 @@ namespace Aucovei.Device.Azure
             this.tokenSource = new CancellationTokenSource();
             this.deviceClient = DeviceClient.CreateFromConnectionString(this.GetConnectionString(), TransportType.Amqp);
 
+            // Purge the commands
+            await this.PurgeCommandQueueAsync(this.tokenSource.Token);
+
             this.SendDeviceInfoAsync(this.tokenSource.Token);
             this.StartReceiveLoopAsync(this.tokenSource.Token);
             this.StartSendLoopAsync(this.tokenSource.Token);
@@ -98,6 +101,66 @@ namespace Aucovei.Device.Azure
             DeviceSchemaHelper.RemoveSystemPropertiesForSimulatedDeviceInfo(device);
 
             return JsonConvert.SerializeObject(device);
+        }
+
+        private async Task PurgeCommandQueueAsync(CancellationToken token)
+        {
+            try
+            {
+                Message msg = null;
+
+                NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
+                {
+                    NotificationType = NotificationType.Console,
+                    Data = "Purging device command queue..."
+                };
+
+                this.NotifyUIEvent(notifyEventArgs);
+
+                while (!token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        // Retrieve the message from the IoT Hub
+                        msg = await this.deviceClient.ReceiveAsync();
+
+                        if (msg == null)
+                        {
+                            notifyEventArgs = new NotifyUIEventArgs()
+                            {
+                                NotificationType = NotificationType.Console,
+                                Data = "Finished purging device command queue..."
+                            };
+
+                            this.NotifyUIEvent(notifyEventArgs);
+
+                            return;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex);
+                    }
+                   
+                    if (msg != null)
+                    {
+                        await this.deviceClient.RejectAsync(msg.LockToken);
+
+                        // Pause before running through the receive loop
+                        await Task.Delay(TimeSpan.FromMilliseconds(50));
+                    }
+                }                
+            }
+            catch (Exception ex)
+            {
+                NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
+                {
+                    NotificationType = NotificationType.Console,
+                    Data = string.Format("Unexpected exception while purging device commands queue: {0}", ex.ToString())
+                };
+
+                this.NotifyUIEvent(notifyEventArgs);
+            }
         }
 
         private async void StartReceiveLoopAsync(CancellationToken token)
@@ -443,7 +506,7 @@ namespace Aucovei.Device.Azure
                     {
                         await this.commandProcessor.ExecuteCommandAsync(Commands.DriveForward);
                         await this.commandProcessor.ExecuteCommandAsync(Commands.CameraLedOn);
-                    
+
                         while (count > 0)
                         {
                             count--;
