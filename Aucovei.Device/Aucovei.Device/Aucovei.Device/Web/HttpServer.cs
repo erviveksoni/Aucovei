@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
@@ -9,7 +10,10 @@ using System.Threading.Tasks;
 using Aucovei.Device.Configuration;
 using Aucovei.Device.Devices;
 using Aucovei.Device.Helper;
+using OpenCVLibrary;
+using Windows.Graphics.Imaging;
 using Windows.Networking.Sockets;
+using Windows.Storage;
 using Windows.Storage.Streams;
 
 namespace Aucovei.Device.Web
@@ -18,6 +22,7 @@ namespace Aucovei.Device.Web
     {
         private const uint BUFFER_SIZE = 3024;
         private readonly StreamSocketListener _listener;
+        private readonly OpenCVHelper openCvHelper;
         private CancellationTokenSource streamCancellationTokenSource;
 
         //Dependency objects
@@ -26,11 +31,16 @@ namespace Aucovei.Device.Web
         private bool isFeedActive;
         private StreamWebSocket cloudStreamWebSocket;
 
+        public delegate void NotifyEventHandler(object sender, NotificationEventArgs e);
+
+        public event NotifyEventHandler NotifyCallerEventHandler;
+
         public HttpServer(Camera camera, VideoSetting videoSetting)
         {
             this._camera = camera;
             this.videoSetting = videoSetting;
             this.isFeedActive = false;
+            this.openCvHelper = new OpenCVHelper();
 
             this._listener = new StreamSocketListener();
             this._listener.ConnectionReceived += this.ProcessRequest;
@@ -53,6 +63,7 @@ namespace Aucovei.Device.Web
             this._camera.Start();
             this.isFeedActive = true;
             await this.StreamToCloudAsync();
+            await this.PerformObstacleDetectionAsync();
         }
 
         public async Task Stop()
@@ -200,6 +211,62 @@ namespace Aucovei.Device.Web
             return folderPath;
         }
 
+        public async Task PerformObstacleDetectionAsync()
+        {
+            try
+            {
+                SoftwareBitmap templateImage;
+                StorageFile file =
+                    await Windows.ApplicationModel.Package.Current.InstalledLocation.GetFileAsync(
+                        @"Assets\" + "stop_sign_prototype.png");
+                using (IRandomAccessStream stream = await file.OpenAsync(FileAccessMode.Read))
+                {
+                    BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
+                    templateImage = await decoder.GetSoftwareBitmapAsync();
+                }
+
+                var task = Task.Run(async () =>
+                {
+                    while (!this.streamCancellationTokenSource.IsCancellationRequested)
+                    {
+                        await Task.Delay(1000);
+
+                        try
+                        {
+                            if (this._camera.Frame != null)
+                            {
+                                var bytes = this._camera.Frame.ToArray();
+                                var stream = bytes.AsBuffer().AsStream();
+                                var decoder = await BitmapDecoder.CreateAsync(
+                                    BitmapDecoder.JpegDecoderId,
+                                    stream.AsRandomAccessStream());
+                                var softwareBitmap = await decoder.GetSoftwareBitmapAsync();
+
+                                var result = this.openCvHelper.IsStopSign(templateImage, softwareBitmap);
+
+                                this.OnNotifyEventHandler(result);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            //
+                        }
+                    }
+                }, this.streamCancellationTokenSource.Token);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
+        }
+
+        private void OnNotifyEventHandler(bool isStopSignDetected)
+        {
+            this.NotifyCallerEventHandler?.Invoke(this, new NotificationEventArgs()
+            {
+                IsObstacleDetected = isStopSignDetected
+            });
+        }
 
         private void MStreamWebSocket_Closed(IWebSocket sender, WebSocketClosedEventArgs args)
         {
@@ -258,5 +325,10 @@ namespace Aucovei.Device.Web
                 Debug.WriteLine(ex);
             }
         }
+    }
+
+    public class NotificationEventArgs : EventArgs
+    {
+        public bool IsObstacleDetected;
     }
 }

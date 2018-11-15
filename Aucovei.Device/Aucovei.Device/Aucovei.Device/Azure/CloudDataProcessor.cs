@@ -44,7 +44,7 @@ namespace Aucovei.Device.Azure
             this.deviceClient = DeviceClient.CreateFromConnectionString(this.GetConnectionString(), TransportType.Amqp);
 
             // Purge the commands
-            await this.PurgeCommandQueueAsync(this.tokenSource.Token);
+            // await this.PurgeCommandQueueAsync(this.tokenSource.Token);
 
             this.SendDeviceInfoAsync(this.tokenSource.Token);
             this.StartReceiveLoopAsync(this.tokenSource.Token);
@@ -269,6 +269,12 @@ namespace Aucovei.Device.Azure
 
                     value = JsonConvert.SerializeObject(this.reportedTelemetry["DeviceIp"] ?? string.Empty);
                     monitorData.DeviceIp = value;
+
+                    value = JsonConvert.SerializeObject(this.reportedTelemetry["IsObstacleDetected"] ?? string.Empty);
+                    if (bool.TryParse(value, out bool isObstacleDetected))
+                    {
+                        monitorData.IsObstacleDetected = isObstacleDetected;
+                    }
 
                     if (this.activateExternalTemperature)
                     {

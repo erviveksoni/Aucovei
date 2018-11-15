@@ -23,6 +23,7 @@ namespace Aucovei.Device.CommandProcessor
         private HCSR04 ultrasonicsensor;
         private bool wasObstacleDetected;
         private bool isCameraActive;
+        private bool isObstacleDetected;
         private CancellationTokenSource ultrasonicTimerToken;
 
         public delegate void NotifyDataEventHandler(object sender, NotificationDataEventArgs e);
@@ -44,6 +45,12 @@ namespace Aucovei.Device.CommandProcessor
             this.panTiltServo = panTiltServo;
             this.ultrasonicsensor = ultrasonicsensor;
             this.arduino.I2CDataReceived += this.Arduino_I2CDataReceived;
+            this.httpServer.NotifyCallerEventHandler += this.NotifyOnObstacleEventHandler;
+        }
+
+        private void NotifyOnObstacleEventHandler(object sender, NotificationEventArgs e)
+        {
+            this.isObstacleDetected = e.IsObstacleDetected;
         }
 
         private void Arduino_I2CDataReceived(object sender, Arduino.Arduino.I2CDataReceivedEventArgs e)
@@ -57,6 +64,7 @@ namespace Aucovei.Device.CommandProcessor
                 telemetry.IsCameraActive = this.isCameraActive;
                 telemetry.RoverSpeed = speedInmPerSecond;
                 telemetry.DeviceIp = this.isCameraActive ? Helpers.GetIPAddress()?.ToString() : null;
+                telemetry.IsObstacleDetected = this.isObstacleDetected;
 
                 this.OnNotifyDataEventHandler("AZURE", JObject.FromObject(telemetry));
             }

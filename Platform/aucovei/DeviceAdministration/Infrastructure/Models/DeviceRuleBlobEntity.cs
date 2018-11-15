@@ -10,7 +10,9 @@
         public string DeviceId { get; private set; }
         public double? Temperature { get; set; }
         public double? Speed { get; set; }
+        public bool IsObstacleDetected { get; set; }
         public string TemperatureRuleOutput { get; set; }
         public string SpeedRuleOutput { get; set; }
+        public string ObstacleRuleOutput { get; set; }
     }
 }

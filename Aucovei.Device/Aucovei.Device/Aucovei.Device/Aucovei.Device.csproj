@@ -11,8 +11,8 @@
     <AssemblyName>Aucovei.Device</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
-    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.17134.0</TargetPlatformVersion>
-    <TargetPlatformMinVersion>10.0.16299.0</TargetPlatformMinVersion>
+    <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.17763.0</TargetPlatformVersion>
+    <TargetPlatformMinVersion>10.0.17134.0</TargetPlatformMinVersion>
     <MinimumVisualStudioVersion>14</MinimumVisualStudioVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{A5A43C5B-DE2A-4C0C-9213-0A381AF9435A};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -175,9 +175,55 @@
     <Content Include="Assets\photocameraoff.png" />
     <Content Include="Assets\photocameraon.png" />
     <Content Include="Assets\gpsoff.png" />
+    <Content Include="Assets\Pkg\LargeTile.scale-100.png" />
+    <Content Include="Assets\Pkg\LargeTile.scale-125.png" />
+    <Content Include="Assets\Pkg\LargeTile.scale-150.png" />
+    <Content Include="Assets\Pkg\LargeTile.scale-200.png" />
+    <Content Include="Assets\Pkg\LargeTile.scale-400.png" />
+    <Content Include="Assets\Pkg\SmallTile.scale-100.png" />
+    <Content Include="Assets\Pkg\SmallTile.scale-125.png" />
+    <Content Include="Assets\Pkg\SmallTile.scale-150.png" />
+    <Content Include="Assets\Pkg\SmallTile.scale-200.png" />
+    <Content Include="Assets\Pkg\SmallTile.scale-400.png" />
+    <Content Include="Assets\Pkg\SplashScreen.scale-100.png" />
+    <Content Include="Assets\Pkg\SplashScreen.scale-125.png" />
+    <Content Include="Assets\Pkg\SplashScreen.scale-150.png" />
+    <Content Include="Assets\Pkg\SplashScreen.scale-200.png" />
+    <Content Include="Assets\Pkg\SplashScreen.scale-400.png" />
+    <Content Include="Assets\Pkg\Square150x150Logo.scale-100.png" />
+    <Content Include="Assets\Pkg\Square150x150Logo.scale-125.png" />
+    <Content Include="Assets\Pkg\Square150x150Logo.scale-150.png" />
+    <Content Include="Assets\Pkg\Square150x150Logo.scale-200.png" />
+    <Content Include="Assets\Pkg\Square150x150Logo.scale-400.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.altform-unplated_targetsize-16.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.altform-unplated_targetsize-24.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.altform-unplated_targetsize-256.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.altform-unplated_targetsize-32.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.altform-unplated_targetsize-48.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.scale-100.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.scale-125.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.scale-150.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.scale-200.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.scale-400.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.targetsize-16.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.targetsize-24.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.targetsize-256.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.targetsize-32.png" />
+    <Content Include="Assets\Pkg\Square44x44Logo.targetsize-48.png" />
+    <Content Include="Assets\Pkg\StoreLogo.scale-100.png" />
+    <Content Include="Assets\Pkg\StoreLogo.scale-125.png" />
+    <Content Include="Assets\Pkg\StoreLogo.scale-150.png" />
+    <Content Include="Assets\Pkg\StoreLogo.scale-200.png" />
+    <Content Include="Assets\Pkg\StoreLogo.scale-400.png" />
+    <Content Include="Assets\Pkg\Wide310x150Logo.scale-100.png" />
+    <Content Include="Assets\Pkg\Wide310x150Logo.scale-125.png" />
+    <Content Include="Assets\Pkg\Wide310x150Logo.scale-150.png" />
+    <Content Include="Assets\Pkg\Wide310x150Logo.scale-200.png" />
+    <Content Include="Assets\Pkg\Wide310x150Logo.scale-400.png" />
     <Content Include="Assets\speed.png" />
     <Content Include="Assets\locationoff.png" />
     <Content Include="Assets\locationon.png" />
+    <Content Include="Assets\stop_sign_prototype.png" />
     <Content Include="Assets\wifi-signal.png" />
     <Content Include="Properties\Default.rd.xml" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
@@ -228,7 +274,12 @@
       <Version>1.23.0</Version>
     </PackageReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\OpenCVLibrary\OpenCVLibrary.vcxproj">
+      <Project>{79ced334-953b-4773-a816-ff4e990d694d}</Project>
+      <Name>OpenCVLibrary</Name>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
   </PropertyGroup>

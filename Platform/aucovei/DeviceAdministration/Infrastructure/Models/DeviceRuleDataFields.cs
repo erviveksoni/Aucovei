@@ -20,9 +20,17 @@ namespace Microsoft.Azure.Devices.Applications.RemoteMonitoring.DeviceAdmin.Infr
             }
         }
 
+        public static string IsObstacleDetected
+        {
+            get
+            {
+                return "IsObstacleDetected";
+            }
+        }
+
         private static List<string> _availableDataFields = new List<string>
         {
-            Temperature, Speed
+            Temperature, Speed, IsObstacleDetected
         };
 
         public static List<string> GetListOfAvailableDataFields()

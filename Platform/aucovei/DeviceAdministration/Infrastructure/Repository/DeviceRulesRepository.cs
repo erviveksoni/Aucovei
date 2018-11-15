@@ -234,6 +234,11 @@ namespace Microsoft.Azure.Devices.Applications.RemoteMonitoring.DeviceAdmin.Infr
                         entity.Speed = rule.Threshold;
                         entity.SpeedRuleOutput = rule.RuleOutput;
                     }
+                    else if (rule.DataField == DeviceRuleDataFields.IsObstacleDetected)
+                    {
+                        entity.IsObstacleDetected = System.Convert.ToBoolean(rule.Threshold);
+                        entity.ObstacleRuleOutput = rule.RuleOutput;
+                    }
                 }
             }
 

@@ -150,6 +150,7 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="packages.config" />
+    <None Include="Properties\PublishProfiles\aucoveidemo-jobhost - Web Deploy.pubxml" />
     <None Include="Properties\webjob-publish-settings.json" />
     <None Include="Scripts\jquery-2.2.3.min.map" />
   </ItemGroup>

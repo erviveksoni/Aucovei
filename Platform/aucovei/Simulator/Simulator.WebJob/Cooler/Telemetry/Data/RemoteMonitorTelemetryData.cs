@@ -7,6 +7,7 @@
         public double Speed { get; set; }
         public double? ExternalTemperature { get; set; }
         public bool CameraStatus { get; set; }
+        public bool IsObstacleDetected { get; set; }
         public string DeviceIp { get; set; }
     }
 }

@@ -13,11 +13,14 @@ namespace Microsoft.Azure.Devices.Applications.RemoteMonitoring.DeviceAdmin.Infr
 
         private const string _ruleOutputAlarmTemp = "AlarmTemp";
         private const string _ruleOutputAlarmSpeed = "AlarmSpeed";
+        private const string _ruleOutputAlarmObstacle = "AlarmObstacle";
+
 
         private List<string> _availableRuleOutputs = new List<string>() 
         {
             _ruleOutputAlarmTemp,
-            _ruleOutputAlarmSpeed
+            _ruleOutputAlarmSpeed,
+            _ruleOutputAlarmObstacle
         };
 
         public ActionMappingLogic(IActionMappingRepository actionMappingRepository, IDeviceRulesRepository rulesRepository)
@@ -66,6 +69,14 @@ namespace Microsoft.Azure.Devices.Applications.RemoteMonitoring.DeviceAdmin.Infr
             };
 
             await _actionMappingRepository.SaveMappingAsync(am2);
+
+            var am3 = new ActionMapping()
+            {
+                RuleOutput = _ruleOutputAlarmObstacle,
+                ActionId = "Raise Alarm"
+            };
+
+            await _actionMappingRepository.SaveMappingAsync(am3);
 
             return true;
         }

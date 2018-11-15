@@ -179,7 +179,7 @@ public class ControlFragment extends Fragment {
                 {
                     command = "TILT-1";
                     asyncTaskRunner = new AsyncTaskRunner();
-                    asyncTaskRunner.execute(command, "1000");
+                    asyncTaskRunner.execute(command);
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     asyncTaskRunner.cancel(true);
                 }
@@ -194,7 +194,7 @@ public class ControlFragment extends Fragment {
                 {
                     command = "TILT-2";
                     asyncTaskRunner = new AsyncTaskRunner();
-                    asyncTaskRunner.execute(command, "1000");
+                    asyncTaskRunner.execute(command);
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     asyncTaskRunner.cancel(true);
                 }
@@ -209,7 +209,7 @@ public class ControlFragment extends Fragment {
                 {
                     command = "TILT-3";
                     asyncTaskRunner = new AsyncTaskRunner();
-                    asyncTaskRunner.execute(command, "1000");
+                    asyncTaskRunner.execute(command);
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     asyncTaskRunner.cancel(true);
                 }
@@ -224,7 +224,7 @@ public class ControlFragment extends Fragment {
                 {
                     command = "TILT-4";
                     asyncTaskRunner = new AsyncTaskRunner();
-                    asyncTaskRunner.execute(command, "1000");
+                    asyncTaskRunner.execute(command);
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     asyncTaskRunner.cancel(true);
                 }
@@ -239,7 +239,7 @@ public class ControlFragment extends Fragment {
                 {
                     command = "TILT-5";
                     asyncTaskRunner = new AsyncTaskRunner();
-                    asyncTaskRunner.execute(command, "1000");
+                    asyncTaskRunner.execute(command);
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     asyncTaskRunner.cancel(true);
                 }
@@ -406,7 +406,7 @@ public class ControlFragment extends Fragment {
         @Override
         protected Boolean doInBackground(String... params) {
             try {
-                String delay = "500";
+                String delay = "1000";
                 while (!isCancelled()) {
                     String command = params[0];
                     if (command == null) {

@@ -168,6 +168,12 @@ namespace Microsoft.Azure.Devices.Applications.RemoteMonitoring.DeviceAdmin.Infr
             speedRule.RuleOutput = "AlarmSpeed";
             speedRule.Threshold = 48.0d;
             await SaveDeviceRuleAsync(speedRule);
+
+            DeviceRule obstacleRule = await GetNewRuleAsync(existingDeviceIds[0]);
+            speedRule.DataField = DeviceRuleDataFields.IsObstacleDetected;
+            speedRule.RuleOutput = "AlarmObstacle";
+            speedRule.Threshold = 0;
+            await SaveDeviceRuleAsync(obstacleRule);
         }
         
         public async Task<TableStorageResponse<DeviceRule>> DeleteDeviceRuleAsync(string deviceId, string ruleId)

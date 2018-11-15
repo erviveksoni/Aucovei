@@ -175,6 +175,27 @@ namespace Microsoft.Azure.Devices.Applications.RemoteMonitoring.EventProcessor.W
                         Trace.TraceError("ActionProcessor: speedActionId value is empty for speedRuleOutput '{0}'", ruleOutput);
                     }
                 }
+
+                if (ruleOutput.Equals("AlarmObstacle", StringComparison.OrdinalIgnoreCase))
+                {
+                    Trace.TraceInformation("ProcessAction: obstacle rule triggered!");
+                    bool obstacleReading = ExtractBoolean(eventData.reading);
+
+                    string obstacleActionId = await _actionMappingLogic.GetActionIdFromRuleOutputAsync(ruleOutput);
+
+                    if (!string.IsNullOrWhiteSpace(obstacleActionId))
+                    {
+                        //await _actionLogic.ExecuteLogicAppAsync(
+                        //    obstacleActionId,
+                        //    deviceId,
+                        //    "IsObstacleDetected",
+                        //    obstacleReading);
+                    }
+                    else
+                    {
+                        Trace.TraceError("ActionProcessor: speedActionId value is empty for obstacleRuleOutput '{0}'", ruleOutput);
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -193,6 +214,18 @@ namespace Microsoft.Azure.Devices.Applications.RemoteMonitoring.EventProcessor.W
 
             string valueAsString = value.ToString();
             return double.Parse(valueAsString, CultureInfo.CurrentCulture);
+        }
+
+        private bool ExtractBoolean(dynamic value)
+        {
+            if (value == null)
+            {
+                Trace.TraceError("ActionProcessor: unable to parse null boolean value");
+                return false;
+            }
+
+            string valueAsString = value.ToString();
+            return string.Equals(valueAsString, "1", StringComparison.OrdinalIgnoreCase);
         }
 
         public Task CloseAsync(PartitionContext context, CloseReason reason)
