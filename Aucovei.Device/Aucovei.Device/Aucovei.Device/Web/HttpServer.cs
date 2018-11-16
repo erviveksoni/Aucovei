@@ -259,10 +259,6 @@ namespace Aucovei.Device.Web
             {
                 Debug.WriteLine(ex);
             }
-            finally
-            {
-                this.OnNotifyEventHandler(false);
-            }
         }
 
         private void OnNotifyEventHandler(bool isStopSignDetected)
