@@ -213,6 +213,7 @@
     <Content Include="Assets\StoreLogo-sdk.scale-200.png" />
     <Content Include="Assets\StoreLogo-sdk.scale-400.png" />
     <Content Include="Assets\tile-sdk.png" />
+    <Content Include="Assets\warningsign.png" />
     <Content Include="Assets\WideTile.scale-100.png" />
     <Content Include="Assets\WideTile.scale-125.png" />
     <Content Include="Assets\WideTile.scale-150.png" />
@@ -232,6 +233,9 @@
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>6.1.9</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications">
+      <Version>5.0.0</Version>
     </PackageReference>
     <PackageReference Include="Newtonsoft.Json">
       <Version>11.0.2</Version>

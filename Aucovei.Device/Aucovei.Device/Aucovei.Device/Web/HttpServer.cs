@@ -78,6 +78,7 @@ namespace Aucovei.Device.Web
                 this.streamCancellationTokenSource.Cancel();
                 await this._camera.Stop();
                 this.isFeedActive = false;
+                this.OnNotifyEventHandler(false);
 
                 // this._listener.Dispose();
             }
@@ -257,6 +258,10 @@ namespace Aucovei.Device.Web
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
+            }
+            finally
+            {
+                this.OnNotifyEventHandler(false);
             }
         }
 

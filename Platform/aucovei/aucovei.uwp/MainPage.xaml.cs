@@ -12,22 +12,18 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Net.WebSockets;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using aucovei.uwp.Helpers;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using Microsoft.Toolkit.Uwp.Notifications;
 using Newtonsoft.Json.Linq;
-using Windows.Storage.Streams;
-using Windows.UI.Core;
+using Windows.UI.Notifications;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI.Xaml.Navigation;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
@@ -228,6 +224,13 @@ namespace aucovei.uwp
                         this.tokenSrc.Cancel();
                     }
                 }
+                else if (e.PropertyName.Equals(nameof(App.AppData.IsObstacleDetected)))
+                {
+                    if (App.AppData.IsObstacleDetected)
+                    {
+                        this.PopObstacleToast();
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -249,22 +252,43 @@ namespace aucovei.uwp
                     if (telemetry.Count > 0)
                     {
                         var lastrecord = telemetry.Last;
-                        if (lastrecord["boolValues"] != null &&
-                            lastrecord["boolValues"]["cameraStatus"] != null)
+                        if (lastrecord["boolValues"] != null)
                         {
-                            var camStatus = lastrecord["boolValues"]["cameraStatus"].ToObject<bool>();
-                            if (camStatus)
+                            if (lastrecord["boolValues"]["cameraStatus"] != null)
                             {
-                                if (!App.AppData.IsVideoFeedActive)
+                                var camStatus = lastrecord["boolValues"]["cameraStatus"].ToObject<bool>();
+                                if (camStatus)
                                 {
-                                    App.AppData.IsVideoFeedActive = true;
+                                    if (!App.AppData.IsVideoFeedActive)
+                                    {
+                                        App.AppData.IsVideoFeedActive = true;
+                                    }
+                                }
+                                else
+                                {
+                                    if (App.AppData.IsVideoFeedActive)
+                                    {
+                                        App.AppData.IsVideoFeedActive = false;
+                                    }
                                 }
                             }
-                            else
+
+                            if (lastrecord["boolValues"]["isObstacleDetected"] != null)
                             {
-                                if (App.AppData.IsVideoFeedActive)
+                                var obstacleDetected = lastrecord["boolValues"]["isObstacleDetected"].ToObject<bool>();
+                                if (obstacleDetected)
                                 {
-                                    App.AppData.IsVideoFeedActive = false;
+                                    if (!App.AppData.IsObstacleDetected)
+                                    {
+                                        App.AppData.IsObstacleDetected = true;
+                                    }
+                                }
+                                else
+                                {
+                                    if (App.AppData.IsObstacleDetected)
+                                    {
+                                        App.AppData.IsObstacleDetected = false;
+                                    }
                                 }
                             }
                         }
@@ -274,6 +298,11 @@ namespace aucovei.uwp
                             {
                                 App.AppData.IsVideoFeedActive = false;
                             }
+
+                            if (App.AppData.IsObstacleDetected)
+                            {
+                                App.AppData.IsObstacleDetected = false;
+                            }
                         }
                     }
                     else
@@ -281,6 +310,11 @@ namespace aucovei.uwp
                         if (App.AppData.IsVideoFeedActive)
                         {
                             App.AppData.IsVideoFeedActive = false;
+                        }
+
+                        if (App.AppData.IsObstacleDetected)
+                        {
+                            App.AppData.IsObstacleDetected = false;
                         }
                     }
                 }
@@ -298,6 +332,61 @@ namespace aucovei.uwp
             {
                 App.AppData.IsVideoFeedActive = false;
             }
+
+            if (App.AppData.IsObstacleDetected)
+            {
+                App.AppData.IsObstacleDetected = false;
+            }
+        }
+
+        private void PopObstacleToast()
+        {
+            // In a real app, these would be initialized with actual data
+            string title = "Roadblock Alert";
+            string content = "Possible roadblock ahead!";
+            string description = "Please check the app for more information.";
+            string logo = "ms-appx:///Assets/warningsign.png";
+
+            // Construct the visuals of the toast
+            ToastVisual visual = new ToastVisual()
+            {
+                BindingGeneric = new ToastBindingGeneric()
+                {
+                    Children =
+                    {
+                        new AdaptiveText()
+                        {
+                            Text = title
+                        },
+
+                        new AdaptiveText()
+                        {
+                            Text = content,
+                        },
+
+                        new AdaptiveText()
+                        {
+                            Text = description
+                        }
+                    },
+
+                    AppLogoOverride = new ToastGenericAppLogo()
+                    {
+                        Source = logo,
+                        HintCrop = ToastGenericAppLogoCrop.Default
+                    }
+                }
+            };
+
+            ToastContent toastContent = new ToastContent()
+            {
+                Scenario = ToastScenario.Alarm,
+                Visual = visual,
+            };
+
+            // And create the toast notification
+            var toast = new ToastNotification(toastContent.GetXml());
+            ToastNotificationManager.CreateToastNotifier().Show(toast);
         }
     }
 

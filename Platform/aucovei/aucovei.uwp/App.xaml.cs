@@ -144,6 +144,8 @@ namespace aucovei.uwp
 
         private bool isConnected;
 
+        private bool isObstacleDetected;
+
         public AuthenticationResult AuthResult { get; set; }
 
         public double CurrentZoomLevel { get; set; }
@@ -162,6 +164,21 @@ namespace aucovei.uwp
 
                 this.isVideoFeedActive = value;
                 this.OnPropertyChanged("IsVideoFeedActive");
+            }
+        }
+
+        public bool IsObstacleDetected
+        {
+            get => this.isObstacleDetected;
+            set
+            {
+                if (this.isObstacleDetected == value)
+                {
+                    return;
+                }
+
+                this.isObstacleDetected = value;
+                this.OnPropertyChanged("IsObstacleDetected");
             }
         }
 
