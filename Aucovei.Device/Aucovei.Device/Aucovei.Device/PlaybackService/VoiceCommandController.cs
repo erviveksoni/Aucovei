@@ -55,8 +55,7 @@ namespace Aucovei.Device.Services
             "ok " + ROBOT_NAME,
             "hey " + ROBOT_NAME,
             "hi " + ROBOT_NAME,
-            "hello " + ROBOT_NAME,
-            ROBOT_NAME
+            "hello " + ROBOT_NAME
         };
 
         private string[] navCommands =

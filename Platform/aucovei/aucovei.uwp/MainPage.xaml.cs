@@ -18,6 +18,7 @@ using aucovei.uwp.Helpers;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.Toolkit.Uwp.Notifications;
 using Newtonsoft.Json.Linq;
+using Windows.UI;
 using Windows.UI.Notifications;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
@@ -228,7 +229,14 @@ namespace aucovei.uwp
                 {
                     if (App.AppData.IsObstacleDetected)
                     {
+                        this.HeaderPanelSub.Background = this.HeaderPanel.Background = new SolidColorBrush(Colors.Red);
+
                         this.PopObstacleToast();
+                    }
+                    else
+                    {
+                        this.HeaderPanelSub.Background = this.HeaderPanel.Background =
+                            Application.Current.Resources["SystemControlBackgroundChromeMediumBrush"] as SolidColorBrush;
                     }
                 }
             }

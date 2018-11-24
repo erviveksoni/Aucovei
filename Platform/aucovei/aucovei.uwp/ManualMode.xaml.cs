@@ -157,10 +157,17 @@ namespace aucovei.uwp
             if (ptr.PointerDeviceType == Windows.Devices.Input.PointerDeviceType.Mouse)
             {
                 this.camButtonToken = new CancellationTokenSource();
-                while (!this.camButtonToken.IsCancellationRequested)
+                Action loop = async () =>
                 {
-                    this.commandQueue.Enqueue(Tuple.Create(MoveCamera, btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 1000));
-                }
+                    while (!this.camButtonToken.IsCancellationRequested)
+                    {
+                        this.commandQueue.Enqueue(Tuple.Create(MoveCamera, btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 10));
+
+                        await Task.Delay(TimeSpan.FromMilliseconds(1000));
+                    }
+                };
+
+                loop.Invoke();
             }
 
             // Prevent most handlers along the event route from handling the same event again.
@@ -187,10 +194,17 @@ namespace aucovei.uwp
             if (e.HoldingState == Windows.UI.Input.HoldingState.Started)
             {
                 this.camButtonToken = new CancellationTokenSource();
-                while (!this.camButtonToken.IsCancellationRequested)
+                Action loop = async () =>
                 {
-                    this.commandQueue.Enqueue(Tuple.Create(MoveCamera, btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 1000));
-                }
+                    while (!this.camButtonToken.IsCancellationRequested)
+                    {
+                        this.commandQueue.Enqueue(Tuple.Create(MoveCamera, btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 10));
+
+                        await Task.Delay(TimeSpan.FromMilliseconds(1000));
+                    }
+                };
+
+                loop.Invoke();
             }
             else
             {

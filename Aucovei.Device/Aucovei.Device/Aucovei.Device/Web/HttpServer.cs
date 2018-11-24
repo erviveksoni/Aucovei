@@ -10,8 +10,9 @@ using System.Threading.Tasks;
 using Aucovei.Device.Configuration;
 using Aucovei.Device.Devices;
 using Aucovei.Device.Helper;
-using OpenCVLibrary;
+using Windows.AI.MachineLearning;
 using Windows.Graphics.Imaging;
+using Windows.Media;
 using Windows.Networking.Sockets;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -22,7 +23,7 @@ namespace Aucovei.Device.Web
     {
         private const uint BUFFER_SIZE = 3024;
         private readonly StreamSocketListener _listener;
-        private readonly OpenCVHelper openCvHelper;
+        private RoadSignDetectionMLModel mlModel;
         private CancellationTokenSource streamCancellationTokenSource;
 
         //Dependency objects
@@ -40,7 +41,6 @@ namespace Aucovei.Device.Web
             this._camera = camera;
             this.videoSetting = videoSetting;
             this.isFeedActive = false;
-            this.openCvHelper = new OpenCVHelper();
 
             this._listener = new StreamSocketListener();
             this._listener.ConnectionReceived += this.ProcessRequest;
@@ -48,7 +48,7 @@ namespace Aucovei.Device.Web
             this._listener.Control.NoDelay = false;
             this._listener.Control.QualityOfService = SocketQualityOfService.LowLatency;
             this._listener.BindServiceNameAsync(80.ToString()).GetAwaiter();
-
+            this.LoadModelAsync().GetAwaiter();
         }
 
         public async Task Start()
@@ -86,6 +86,12 @@ namespace Aucovei.Device.Web
             {
 
             }
+        }
+
+        private async Task LoadModelAsync()
+        {
+            var modelFile = await StorageFile.GetFileFromApplicationUriAsync(new Uri($"ms-appx:///Assets/{Constants.RoadSignDetectionMLModelFileName}"));
+            this.mlModel = await RoadSignDetectionMLModel.Createmlmodel(modelFile);
         }
 
         private async void ProcessRequest(StreamSocketListener streamSocktetListener, StreamSocketListenerConnectionReceivedEventArgs eventArgs)
@@ -230,28 +236,41 @@ namespace Aucovei.Device.Web
                 {
                     while (!this.streamCancellationTokenSource.IsCancellationRequested)
                     {
-                        await Task.Delay(1000);
-
                         try
                         {
-                            if (this._camera.Frame != null)
+                            if (this._camera.Bitmap != null)
                             {
-                                var bytes = this._camera.Frame.ToArray();
-                                var stream = bytes.AsBuffer().AsStream();
-                                var decoder = await BitmapDecoder.CreateAsync(
-                                    BitmapDecoder.JpegDecoderId,
-                                    stream.AsRandomAccessStream());
-                                var softwareBitmap = await decoder.GetSoftwareBitmapAsync();
+                                VideoFrame rawImage = VideoFrame.CreateWithSoftwareBitmap(this._camera.Bitmap);
+                                RoadSignDetectionMLModelInput input = new RoadSignDetectionMLModelInput
+                                {
+                                    Data = ImageFeatureValue.CreateFromVideoFrame(rawImage)
+                                };
 
-                                var result = this.openCvHelper.IsStopSign(templateImage, softwareBitmap);
-
-                                this.OnNotifyEventHandler(result);
+                                var output = await this.mlModel.EvaluateAsync(input);
+                                var result = output.ClassLabel.GetAsVectorView()[0];
+                                var loss = output.Loss[0][result] * 100.0f;
+                                if (string.Equals(result, "stop", StringComparison.OrdinalIgnoreCase) && loss > 50.0)
+                                {
+                                    int counter = 5;
+                                    while (counter > 0)
+                                    {
+                                        counter--;
+                                        this.OnNotifyEventHandler(true);
+                                        await Task.Delay(TimeSpan.FromSeconds(1));
+                                    }
+                                }
+                                else
+                                {
+                                    this.OnNotifyEventHandler(false);
+                                }
                             }
                         }
                         catch (Exception ex)
                         {
                             //
                         }
+
+                        await Task.Delay(TimeSpan.FromMilliseconds(10));
                     }
                 }, this.streamCancellationTokenSource.Token);
             }

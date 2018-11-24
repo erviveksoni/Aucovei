@@ -48,9 +48,22 @@ namespace Aucovei.Device.CommandProcessor
             this.httpServer.NotifyCallerEventHandler += this.NotifyOnObstacleEventHandler;
         }
 
-        private void NotifyOnObstacleEventHandler(object sender, NotificationEventArgs e)
+        private async void NotifyOnObstacleEventHandler(object sender, NotificationEventArgs e)
         {
             this.isObstacleDetected = e.IsObstacleDetected;
+            if (this.isObstacleDetected)
+            {
+                NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
+                {
+                    NotificationType = NotificationType.Console,
+                    Data = "🛑 Stop sign detected!"
+                };
+
+                this.NotifyUIEvent(notifyEventArgs);
+
+                await this.ExecuteCommandAsync(Commands.DriveStop);
+                await this.ExecuteCommandAsync(Commands.Horn);
+            }
         }
 
         private void Arduino_I2CDataReceived(object sender, Arduino.Arduino.I2CDataReceivedEventArgs e)
@@ -96,6 +109,11 @@ namespace Aucovei.Device.CommandProcessor
             {
                 case Commands.DriveForward:
                     {
+                        if (this.isObstacleDetected)
+                        {
+                            return;
+                        }
+
                         this.arduino.SendCommand(Commands.SpeedNormalValue);
 
                         this.arduino.SendCommand(Commands.DriveForwardValue);
@@ -107,6 +125,11 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveReverse:
                     {
+                        if (this.isObstacleDetected)
+                        {
+                            return;
+                        }
+
                         this.arduino.SendCommand(Commands.SpeedNormalValue);
 
                         this.playbackService.ChangeMediaSource(PlaybackService.SoundFiles.CensorBeep);
@@ -121,6 +144,11 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveLeft:
                     {
+                        if (this.isObstacleDetected)
+                        {
+                            return;
+                        }
+
                         this.arduino.SendCommand(Commands.SpeedSlowValue);
 
                         this.arduino.SendCommand(Commands.DriveLeftValue);
@@ -131,6 +159,11 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveRight:
                     {
+                        if (this.isObstacleDetected)
+                        {
+                            return;
+                        }
+
                         this.arduino.SendCommand(Commands.SpeedSlowValue);
 
                         this.arduino.SendCommand(Commands.DriveRightValue);
@@ -150,6 +183,11 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveReverseLeft:
                     {
+                        if (this.isObstacleDetected)
+                        {
+                            return;
+                        }
+
                         this.arduino.SendCommand(Commands.SpeedNormalValue);
 
                         this.arduino.SendCommand(Commands.DriveReverseLeftValue);
@@ -161,6 +199,11 @@ namespace Aucovei.Device.CommandProcessor
                     }
                 case Commands.DriveReverseRight:
                     {
+                        if (this.isObstacleDetected)
+                        {
+                            return;
+                        }
+
                         this.arduino.SendCommand(Commands.SpeedNormalValue);
 
                         this.arduino.SendCommand(Commands.DriveReverseRightValue);

@@ -17,7 +17,6 @@
     xmlns:local="using:aucovei.uwp"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:controls="using:XamlBrewer.Uwp.Controls"
     x:Name="Main"
     mc:Ignorable="d">
 
@@ -74,7 +73,7 @@
             </RelativePanel>
         </SplitView>
         <StackPanel x:Name="HeaderPanel" Orientation="Horizontal">
-            <Border Background="{ThemeResource SystemControlBackgroundChromeMediumBrush}" Grid.Row="0">
+            <Border Background="{ThemeResource SystemControlBackgroundChromeMediumBrush}" Grid.Row="0" x:Name="HeaderPanelSub">
                 <ToggleButton Style="{StaticResource SymbolButton}" Click="Button_Click" VerticalAlignment="Top" Foreground="{ThemeResource ApplicationForegroundThemeBrush}">
                     <ToggleButton.Content>
                         <FontIcon x:Name="Hamburger" FontFamily="Segoe MDL2 Assets" Glyph="&#xE700;" Margin="0,10,0,0"/>
@@ -96,4 +95,3 @@
         </Border>
     </Grid>
 </Page>
-

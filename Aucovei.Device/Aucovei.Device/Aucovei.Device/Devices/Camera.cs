@@ -24,7 +24,9 @@ namespace Aucovei.Device.Devices
     public class Camera
     {
         public byte[] Frame { get; set; }
-        
+
+        public SoftwareBitmap Bitmap { get; set; }
+
         private MediaCapture _mediaCapture;
         private MediaFrameReader _mediaFrameReader;
         
@@ -127,6 +129,12 @@ namespace Aucovei.Device.Devices
                         {
                             var imageTask = BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream, _imageQuality).AsTask();
                             imageTask.Wait();
+
+                            SoftwareBitmap bitmapBuffer = SoftwareBitmap.Convert(
+                                frame.VideoMediaFrame.SoftwareBitmap,
+                                BitmapPixelFormat.Bgra8, 
+                                BitmapAlphaMode.Premultiplied);
+
                             var encoder = imageTask.Result;
                             //encoder.BitmapTransform.Rotation = BitmapRotation.Clockwise270Degrees;
                             encoder.SetSoftwareBitmap(bitmap);
@@ -150,6 +158,8 @@ namespace Aucovei.Device.Devices
                                     if (_lastFrameAdded.Elapsed.Subtract(frameDuration.Elapsed) > TimeSpan.Zero)
                                     {
                                         Frame = image;
+
+                                        Bitmap = bitmapBuffer;
 
                                         _lastFrameAdded = frameDuration;
                                     }
