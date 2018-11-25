@@ -163,7 +163,7 @@ namespace aucovei.uwp
                     {
                         this.commandQueue.Enqueue(Tuple.Create(MoveCamera, btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 10));
 
-                        await Task.Delay(TimeSpan.FromMilliseconds(1000));
+                        await Task.Delay(TimeSpan.FromMilliseconds(2000));
                     }
                 };
 
@@ -200,7 +200,7 @@ namespace aucovei.uwp
                     {
                         this.commandQueue.Enqueue(Tuple.Create(MoveCamera, btn.Name.Replace("CAM", string.Empty, StringComparison.OrdinalIgnoreCase), 10));
 
-                        await Task.Delay(TimeSpan.FromMilliseconds(1000));
+                        await Task.Delay(TimeSpan.FromMilliseconds(2000));
                     }
                 };
 

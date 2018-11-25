@@ -50,9 +50,11 @@ namespace Aucovei.Device.CommandProcessor
 
         private async void NotifyOnObstacleEventHandler(object sender, NotificationEventArgs e)
         {
-            this.isObstacleDetected = e.IsObstacleDetected;
-            if (this.isObstacleDetected)
+            // new obstacle signal
+            var currentState = e.IsObstacleDetected;
+            if (currentState && !this.isObstacleDetected)
             {
+                await this.ExecuteCommandAsync(Commands.DriveStop);
                 NotifyUIEventArgs notifyEventArgs = new NotifyUIEventArgs()
                 {
                     NotificationType = NotificationType.Console,
@@ -61,9 +63,17 @@ namespace Aucovei.Device.CommandProcessor
 
                 this.NotifyUIEvent(notifyEventArgs);
 
-                await this.ExecuteCommandAsync(Commands.DriveStop);
+                dynamic telemetry = new System.Dynamic.ExpandoObject();
+                telemetry.IsCameraActive = this.isCameraActive;
+                telemetry.DeviceIp = this.isCameraActive ? Helpers.GetIPAddress()?.ToString() : null;
+                telemetry.IsObstacleDetected = true;
+
+                // send an urgent tele packet
+                this.OnNotifyDataEventHandler("AZURE", JObject.FromObject(telemetry), true);
                 await this.ExecuteCommandAsync(Commands.Horn);
             }
+
+            this.isObstacleDetected = currentState;
         }
 
         private void Arduino_I2CDataReceived(object sender, Arduino.Arduino.I2CDataReceivedEventArgs e)
@@ -73,11 +83,11 @@ namespace Aucovei.Device.CommandProcessor
                 var speedInmPerSecond = Helpers.ConvertRPSToMeterPerSecond(e.Data.ToString());
                 var temperature = Helpers.ReadTemperature(e.Data.ToString());
                 dynamic telemetry = new System.Dynamic.ExpandoObject();
-                telemetry.Temperature = temperature;
                 telemetry.IsCameraActive = this.isCameraActive;
-                telemetry.RoverSpeed = speedInmPerSecond;
                 telemetry.DeviceIp = this.isCameraActive ? Helpers.GetIPAddress()?.ToString() : null;
                 telemetry.IsObstacleDetected = this.isObstacleDetected;
+                telemetry.Temperature = temperature;
+                telemetry.RoverSpeed = speedInmPerSecond;
 
                 this.OnNotifyDataEventHandler("AZURE", JObject.FromObject(telemetry));
             }
@@ -386,12 +396,13 @@ namespace Aucovei.Device.CommandProcessor
             }
         }
 
-        private void OnNotifyDataEventHandler(string target, object data)
+        private void OnNotifyDataEventHandler(string target, object data, bool isUrgent = false)
         {
             this.NotifyCallerEventHandler?.Invoke(this, new NotificationDataEventArgs()
             {
                 Target = target,
-                Data = data
+                Data = data,
+                IsUrgent = isUrgent
             });
         }
 
@@ -521,5 +532,7 @@ namespace Aucovei.Device.CommandProcessor
         public string Target;
 
         public object Data;
+
+        public bool IsUrgent;
     }
 }

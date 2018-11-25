@@ -141,7 +141,7 @@ namespace Aucovei.Device.Azure
                     {
                         Debug.WriteLine(ex);
                     }
-                   
+
                     if (msg != null)
                     {
                         await this.deviceClient.RejectAsync(msg.LockToken);
@@ -149,7 +149,7 @@ namespace Aucovei.Device.Azure
                         // Pause before running through the receive loop
                         await Task.Delay(TimeSpan.FromMilliseconds(50));
                     }
-                }                
+                }
             }
             catch (Exception ex)
             {
@@ -241,56 +241,61 @@ namespace Aucovei.Device.Azure
 
         public async void StartSendLoopAsync(CancellationToken token)
         {
-            var monitorData = new RemoteMonitorTelemetryData();
             while (!token.IsCancellationRequested)
             {
-                if (this.IsTelemetryActive &&
-                    this.reportedTelemetry != null)
-                {
-                    monitorData.DeviceId = Constants.DeviceId;
-
-                    string value = JsonConvert.SerializeObject(this.reportedTelemetry["Temperature"] ?? string.Empty);
-                    if (double.TryParse(value, out double temp))
-                    {
-                        monitorData.Temperature = temp;
-                    }
-
-                    value = JsonConvert.SerializeObject(this.reportedTelemetry["RoverSpeed"] ?? string.Empty);
-                    if (double.TryParse(value, out double val))
-                    {
-                        monitorData.Speed = val;
-                    }
-
-                    value = JsonConvert.SerializeObject(this.reportedTelemetry["IsCameraActive"] ?? string.Empty);
-                    if (bool.TryParse(value, out bool cameraFlag))
-                    {
-                        monitorData.CameraStatus = cameraFlag;
-                    }
-
-                    value = JsonConvert.SerializeObject(this.reportedTelemetry["DeviceIp"] ?? string.Empty);
-                    monitorData.DeviceIp = value;
-
-                    value = JsonConvert.SerializeObject(this.reportedTelemetry["IsObstacleDetected"] ?? string.Empty);
-                    if (bool.TryParse(value, out bool isObstacleDetected))
-                    {
-                        monitorData.IsObstacleDetected = isObstacleDetected;
-                    }
-
-                    if (this.activateExternalTemperature)
-                    {
-                        // monitorData.ExternalTemperature = _externalTemperatureGenerator.GetNextValue();
-                    }
-                    else
-                    {
-                        monitorData.ExternalTemperature = null;
-                    }
-
-                    //_logger.LogInfo("Sending " + messageBody + " for Device: " + _deviceId);
-
-                    await this.SendEventAsync(JObject.FromObject(monitorData));
-                }
+                await this.SendTelemetryAsync();
 
                 await Task.Delay(TimeSpan.FromSeconds(TELEMETRY_REPORT_FREQUENCY_IN_SECONDS), token);
+            }
+        }
+
+        private async Task SendTelemetryAsync()
+        {
+            var monitorData = new RemoteMonitorTelemetryData();
+
+            if (this.IsTelemetryActive && this.reportedTelemetry != null)
+            {
+                monitorData.DeviceId = Constants.DeviceId;
+
+                string value = JsonConvert.SerializeObject(this.reportedTelemetry["Temperature"] ?? string.Empty);
+                if (double.TryParse(value, out double temp))
+                {
+                    monitorData.Temperature = temp;
+                }
+
+                value = JsonConvert.SerializeObject(this.reportedTelemetry["RoverSpeed"] ?? string.Empty);
+                if (double.TryParse(value, out double val))
+                {
+                    monitorData.Speed = val;
+                }
+
+                value = JsonConvert.SerializeObject(this.reportedTelemetry["IsCameraActive"] ?? string.Empty);
+                if (bool.TryParse(value, out bool cameraFlag))
+                {
+                    monitorData.CameraStatus = cameraFlag;
+                }
+
+                value = JsonConvert.SerializeObject(this.reportedTelemetry["DeviceIp"] ?? string.Empty);
+                monitorData.DeviceIp = value;
+
+                value = JsonConvert.SerializeObject(this.reportedTelemetry["IsObstacleDetected"] ?? string.Empty);
+                if (bool.TryParse(value, out bool isObstacleDetected))
+                {
+                    monitorData.IsObstacleDetected = isObstacleDetected;
+                }
+
+                if (this.activateExternalTemperature)
+                {
+                    // monitorData.ExternalTemperature = _externalTemperatureGenerator.GetNextValue();
+                }
+                else
+                {
+                    monitorData.ExternalTemperature = null;
+                }
+
+                //_logger.LogInfo("Sending " + messageBody + " for Device: " + _deviceId);
+
+                await this.SendEventAsync(JObject.FromObject(monitorData));
             }
         }
 
@@ -516,7 +521,7 @@ namespace Aucovei.Device.Azure
                         while (count > 0)
                         {
                             count--;
-                            await Task.Delay(500);
+                            await Task.Delay(200);
                         }
 
                         await this.commandProcessor.ExecuteCommandAsync(Commands.Horn);
@@ -781,11 +786,17 @@ namespace Aucovei.Device.Azure
             }
         }
 
-        private void CommandProcessor_NotifyCallerEventHandler(object sender, CommandProcessor.NotificationDataEventArgs e)
+        private async void CommandProcessor_NotifyCallerEventHandler(object sender, CommandProcessor.NotificationDataEventArgs e)
         {
             if (string.Equals(e?.Target, "AZURE"))
             {
                 this.reportedTelemetry = e?.Data as JObject;
+
+                if (e.IsUrgent)
+                {
+                    // send tele instance right now
+                    await this.SendTelemetryAsync();
+                }
             }
         }
 

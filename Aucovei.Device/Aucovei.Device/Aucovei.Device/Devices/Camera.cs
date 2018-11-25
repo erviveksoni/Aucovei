@@ -55,9 +55,16 @@ namespace Aucovei.Device.Devices
                 _mediaCapture = new MediaCapture();
 
                 var frameSourceGroups = await MediaFrameSourceGroup.FindAllAsync();
+                var sourceGroups = frameSourceGroups.Select(g => new
+                {
+                    Group = g,
+                    SourceInfo = g.SourceInfos.FirstOrDefault(i => i.SourceKind == MediaFrameSourceKind.Color)
+                }).Where(g => g.SourceInfo != null).ToList();
 
                 var settings = new MediaCaptureInitializationSettings()
                 {
+                    SourceGroup = sourceGroups?.FirstOrDefault()?.Group,
+
                     SharingMode = MediaCaptureSharingMode.ExclusiveControl,
 
                     //With CPU the results contain always SoftwareBitmaps, otherwise with GPU
@@ -69,8 +76,10 @@ namespace Aucovei.Device.Devices
                 };
 
                 await _mediaCapture.InitializeAsync(settings);
+                
+                var mediaFrameSource = this._mediaCapture.FrameSources[sourceGroups?.FirstOrDefault()?.SourceInfo.Id];
 
-                var mediaFrameSource = _mediaCapture.FrameSources.First().Value;
+                /*
                 var videoDeviceController = mediaFrameSource.Controller.VideoDeviceController;
 
                 videoDeviceController.DesiredOptimization = Windows.Media.Devices.MediaCaptureOptimization.Quality;
@@ -94,6 +103,7 @@ namespace Aucovei.Device.Devices
                                                                     .First();
 
                 await mediaFrameSource.SetFormatAsync(videoFormat);
+                */
 
                 _mediaFrameReader = await _mediaCapture.CreateFrameReaderAsync(mediaFrameSource);
                 await _mediaFrameReader.StartAsync();
@@ -127,6 +137,7 @@ namespace Aucovei.Device.Devices
                     {
                         using (var bitmap = SoftwareBitmap.Convert(frame.VideoMediaFrame.SoftwareBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore))
                         {
+                            // var imageTask = BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream).AsTask();
                             var imageTask = BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream, _imageQuality).AsTask();
                             imageTask.Wait();
 

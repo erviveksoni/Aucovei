@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
@@ -79,8 +78,6 @@ namespace Aucovei.Device.Web
                 await this._camera.Stop();
                 this.isFeedActive = false;
                 this.OnNotifyEventHandler(false);
-
-                // this._listener.Dispose();
             }
             catch (Exception ex)
             {
@@ -251,12 +248,13 @@ namespace Aucovei.Device.Web
                                 var loss = output.Loss[0][result] * 100.0f;
                                 if (string.Equals(result, "stop", StringComparison.OrdinalIgnoreCase) && loss > 50.0)
                                 {
-                                    int counter = 5;
+                                    // send high signal for 5 seconds
+                                    int counter = 10;
                                     while (counter > 0)
                                     {
                                         counter--;
                                         this.OnNotifyEventHandler(true);
-                                        await Task.Delay(TimeSpan.FromSeconds(1));
+                                        await Task.Delay(TimeSpan.FromMilliseconds(500));
                                     }
                                 }
                                 else

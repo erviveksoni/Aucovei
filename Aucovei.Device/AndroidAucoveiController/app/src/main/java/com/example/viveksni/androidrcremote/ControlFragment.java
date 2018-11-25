@@ -406,7 +406,7 @@ public class ControlFragment extends Fragment {
         @Override
         protected Boolean doInBackground(String... params) {
             try {
-                String delay = "1000";
+                String delay = "2000";
                 while (!isCancelled()) {
                     String command = params[0];
                     if (command == null) {

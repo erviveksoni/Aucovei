@@ -93,8 +93,12 @@ namespace aucovei.uwp
                 {
                     rootPage.ProgressBar(true);
                     int wpcount = App.AppData.ConnectedAucovei.WayPoints.Skip(1).Count();
-                    await this.svcHelper.SendCommandAsync(App.AppData.ConnectedAucovei.Id, "SendWaypoints",
+                    /*await this.svcHelper.SendCommandAsync(App.AppData.ConnectedAucovei.Id, "SendWaypoints",
                         new KeyValuePair<string, string>("data", json));
+                        */
+                    await this.svcHelper.SendCommandAsync(App.AppData.ConnectedAucovei.Id, "DemoRun",
+                        new KeyValuePair<string, string>("data", wpcount.ToString()));
+
                     this.rootPage.NotifyUser($"Waypoints sent to {App.AppData.ConnectedAucovei.DisplayName}!",
                         NotifyType.StatusMessage);
                 }
