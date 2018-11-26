@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
+using Aucovei.Device.Azure;
 using Aucovei.Device.Compass;
 using Aucovei.Device.Configuration;
 using Aucovei.Device.Devices;
@@ -17,7 +18,6 @@ using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media.Imaging;
-using Aucovei.Device.Azure;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -343,7 +343,7 @@ namespace Aucovei.Device
                      var speedString = this.speedInmPerSecond.ToString(CultureInfo.InvariantCulture);
                      // this.displayManager.AppendText(speedString, 80, 3);
                      this.SpeedInfoValue.Text = speedString;
-                     this.TemperatureInfoValue.Text = temperature.ToString(CultureInfo.InvariantCulture);
+                     this.TemperatureInfoValue.Text = this.temperature.ToString(CultureInfo.InvariantCulture);
                  });
         }
 
@@ -606,7 +606,7 @@ namespace Aucovei.Device
                             response = response + drivingDirection.ToString().ToLowerInvariant() + "...";
                             this.Speak(response);
                             await this.commandProcessor.ExecuteCommandAsync(Helper.Helpers.MapDrivingDirectionToCommand(drivingDirection));
-                            this.WriteToCommandTextBlock(response, "🏃‍", 1);
+                            this.WriteToCommandTextBlock(response, "🏃‍", 5);
                         }
                         break;
                     case VoiceCommandType.Stop:
@@ -615,6 +615,17 @@ namespace Aucovei.Device
                         await this.commandProcessor.ExecuteCommandAsync(Commands.DriveStop);
                         this.WriteToCommandTextBlock(response, "🛑", 1);
                         this.WriteToOutputTextBlock("Stopping...");
+                        break;
+                    case VoiceCommandType.Intro:
+                        DateTime make = new DateTime(2018, 8, 1);
+                        int monthsApart = 12 * (DateTime.UtcNow.Year - make.Year) + DateTime.UtcNow.Month - make.Month;
+                        var agemonths = Math.Abs(monthsApart);
+
+                        response = $"Hello! I'am aucovee,a connected car. I love to drive.";
+                        this.Speak(response);
+                        this.WriteToCommandTextBlock("Hello...", "👋🏽", 10);
+                        this.WriteToOutputTextBlock("Hello...");
+
                         break;
                     default:
                         //response = "Sorry, I didn't get that." + Environment.NewLine + "Try \"Go to room 2011\"";

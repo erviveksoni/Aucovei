@@ -33,7 +33,8 @@ namespace Aucovei.Device.Services
         Lights,
         AutoDrive,
         Tilt,
-        Pan
+        Pan,
+        Intro
     }
 
     public struct VoiceCommand
@@ -76,6 +77,14 @@ namespace Aucovei.Device.Services
             "auto drive",
             "autodrive",
             "selfdrive"
+        };
+
+        private string[] selfIntroCommands =
+        {
+            "introduce your self",
+            "introduce yourself",
+            "about yourself",
+            "about you"
         };
 
         private string initText = "Say \"Hey " + ROBOT_NAME + "\" to activate me!";
@@ -368,6 +377,14 @@ namespace Aucovei.Device.Services
                 if (spr.Contains(s))
                 {
                     return VoiceCommandType.AutoDrive;
+                }
+            }
+
+            foreach (string s in this.selfIntroCommands)
+            {
+                if (spr.Contains(s))
+                {
+                    return VoiceCommandType.Intro;
                 }
             }
 
