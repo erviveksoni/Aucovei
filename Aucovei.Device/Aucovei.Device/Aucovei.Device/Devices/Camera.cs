@@ -80,7 +80,7 @@ namespace Aucovei.Device.Devices
                 var mediaFrameSource = this._mediaCapture.FrameSources[sourceGroups?.FirstOrDefault()?.SourceInfo.Id];
 
                 /*
-                // Commented to reduc CPU usage.
+                // Commented to reduce CPU usage.
                 var videoDeviceController = mediaFrameSource.Controller.VideoDeviceController;
 
                 videoDeviceController.DesiredOptimization = Windows.Media.Devices.MediaCaptureOptimization.Quality;

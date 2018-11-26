@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Devices.Applications.RemoteMonitoring.DeviceAdmin.Web.
         private const int DISPLAYED_HISTORY_ITEMS = 18;
         private const int MAX_DEVICES_TO_DISPLAY_ON_DASHBOARD = 200;
 
-        private static readonly TimeSpan CautionAlertMaxDelta = TimeSpan.FromMinutes(91.0);
+        private static readonly TimeSpan CautionAlertMaxDelta = TimeSpan.FromMinutes(31.0);
         private static readonly TimeSpan CriticalAlertMaxDelta = TimeSpan.FromMinutes(11.0);
 
         private readonly IAlertsLogic _alertsLogic;

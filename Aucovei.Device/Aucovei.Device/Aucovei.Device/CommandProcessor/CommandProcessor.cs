@@ -70,7 +70,7 @@ namespace Aucovei.Device.CommandProcessor
 
                 // send an urgent tele packet
                 this.OnNotifyDataEventHandler("AZURE", JObject.FromObject(telemetry), true);
-                await this.ExecuteCommandAsync(Commands.Horn);
+                this.Speak("Stop sign detected!");
             }
 
             this.isObstacleDetected = currentState;
@@ -280,6 +280,12 @@ namespace Aucovei.Device.CommandProcessor
                 case Commands.SpeedSlow:
                     {
                         this.arduino.SendCommand(Commands.SpeedSlowValue);
+
+                        break;
+                    }
+                case Commands.SpeedVerySlow:
+                    {
+                        this.arduino.SendCommand(Commands.SpeedVerySlowValue);
 
                         break;
                     }

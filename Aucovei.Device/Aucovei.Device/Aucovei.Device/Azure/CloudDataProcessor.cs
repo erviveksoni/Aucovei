@@ -511,10 +511,11 @@ namespace Aucovei.Device.Azure
                         usesCaseSensitivePropertyNameMatch: true,
                         exceptionThrownIfNoMatch: true);
 
-                    int count = 0;
                     if (statusstring != null &&
-                        int.TryParse(statusstring.ToString(), out count))
+                        int.TryParse(statusstring.ToString(), out var count))
                     {
+                        await this.commandProcessor.ExecuteCommandAsync("Demo run!");
+
                         await this.commandProcessor.ExecuteCommandAsync(Commands.DriveForward);
                         await this.commandProcessor.ExecuteCommandAsync(Commands.CameraLedOn);
 

@@ -57,8 +57,10 @@
         public const string SpeedSlowValue = "100";
 
         public const string SpeedNormal = "SPEEDNORMAL";
-        public const string SpeedNormalValue = "100";
+        public const string SpeedNormalValue = "100"; // 160
 
+        public const string SpeedVerySlow = "SPEEDVERYSLOW";
+        public const string SpeedVerySlowValue = "80";
 
         public const string SpeedStop = "SPEEDSTOP";
         public const string SpeedStopValue = "0";

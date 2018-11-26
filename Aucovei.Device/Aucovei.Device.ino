@@ -33,6 +33,7 @@
 #define NORMAL_SPEED 160
 #define TURN_SPEED 180
 #define SLOW_SPEED 100
+#define VERY_SLOW_SPEED 80
 #define STOP_SPEED 0
 
 enum command
@@ -43,6 +44,7 @@ enum command
   dirBack = TURN_BACK,
   dirStop = STOP,
   speedSlow = SLOW_SPEED,
+  veryspeedSlow = VERY_SLOW_SPEED,
   speedFast = FAST_SPEED,
   speedStop = STOP_SPEED,
   speedTurn = TURN_SPEED,
@@ -92,8 +94,8 @@ void setup()
 }
 
 void loop() {
-  
-  
+
+
   // DHT11 sampling rate is 1HZ.
 
   delay(1500);
@@ -159,6 +161,9 @@ void executeCommand(int cmdval) {
       break;
     case speedSlow:
       setDriveSpeed(SLOW_SPEED);
+      break;
+    case veryspeedSlow:
+      setDriveSpeed(VERY_SLOW_SPEED);
       break;
     case speedFast:
       setDriveSpeed(FAST_SPEED);
