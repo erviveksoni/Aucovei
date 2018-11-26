@@ -80,6 +80,7 @@ namespace Aucovei.Device.Devices
                 var mediaFrameSource = this._mediaCapture.FrameSources[sourceGroups?.FirstOrDefault()?.SourceInfo.Id];
 
                 /*
+                // Commented to reduc CPU usage.
                 var videoDeviceController = mediaFrameSource.Controller.VideoDeviceController;
 
                 videoDeviceController.DesiredOptimization = Windows.Media.Devices.MediaCaptureOptimization.Quality;
@@ -146,6 +147,8 @@ namespace Aucovei.Device.Devices
                                 BitmapPixelFormat.Bgra8, 
                                 BitmapAlphaMode.Premultiplied);
 
+                            Bitmap = bitmapBuffer;
+
                             var encoder = imageTask.Result;
                             //encoder.BitmapTransform.Rotation = BitmapRotation.Clockwise270Degrees;
                             encoder.SetSoftwareBitmap(bitmap);
@@ -169,8 +172,6 @@ namespace Aucovei.Device.Devices
                                     if (_lastFrameAdded.Elapsed.Subtract(frameDuration.Elapsed) > TimeSpan.Zero)
                                     {
                                         Frame = image;
-
-                                        Bitmap = bitmapBuffer;
 
                                         _lastFrameAdded = frameDuration;
                                     }

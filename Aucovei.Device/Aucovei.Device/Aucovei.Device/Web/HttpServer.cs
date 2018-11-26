@@ -10,7 +10,6 @@ using Aucovei.Device.Configuration;
 using Aucovei.Device.Devices;
 using Aucovei.Device.Helper;
 using Windows.AI.MachineLearning;
-using Windows.Graphics.Imaging;
 using Windows.Media;
 using Windows.Networking.Sockets;
 using Windows.Storage;
@@ -62,7 +61,7 @@ namespace Aucovei.Device.Web
             this._camera.Start();
             this.isFeedActive = true;
             await this.StreamToCloudAsync();
-            await this.PerformObstacleDetectionAsync();
+            this.PerformObstacleDetection();
         }
 
         public async Task Stop()
@@ -215,62 +214,52 @@ namespace Aucovei.Device.Web
             return folderPath;
         }
 
-        public async Task PerformObstacleDetectionAsync()
+        public void PerformObstacleDetection()
         {
             try
             {
-                SoftwareBitmap templateImage;
-                StorageFile file =
-                    await Windows.ApplicationModel.Package.Current.InstalledLocation.GetFileAsync(
-                        @"Assets\" + "stop_sign_prototype.png");
-                using (IRandomAccessStream stream = await file.OpenAsync(FileAccessMode.Read))
-                {
-                    BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
-                    templateImage = await decoder.GetSoftwareBitmapAsync();
-                }
-
                 var task = Task.Run(async () =>
-                {
-                    while (!this.streamCancellationTokenSource.IsCancellationRequested)
-                    {
-                        try
-                        {
-                            if (this._camera.Bitmap != null)
-                            {
-                                VideoFrame rawImage = VideoFrame.CreateWithSoftwareBitmap(this._camera.Bitmap);
-                                RoadSignDetectionMLModelInput input = new RoadSignDetectionMLModelInput
-                                {
-                                    Data = ImageFeatureValue.CreateFromVideoFrame(rawImage)
-                                };
+                 {
+                     while (!this.streamCancellationTokenSource.IsCancellationRequested)
+                     {
+                         try
+                         {
+                             if (this._camera.Bitmap != null)
+                             {
+                                 VideoFrame rawImage = VideoFrame.CreateWithSoftwareBitmap(this._camera.Bitmap);
+                                 RoadSignDetectionMLModelInput input = new RoadSignDetectionMLModelInput
+                                 {
+                                     Data = ImageFeatureValue.CreateFromVideoFrame(rawImage)
+                                 };
 
-                                var output = await this.mlModel.EvaluateAsync(input);
-                                var result = output.ClassLabel.GetAsVectorView()[0];
-                                var loss = output.Loss[0][result] * 100.0f;
-                                if (string.Equals(result, "stop", StringComparison.OrdinalIgnoreCase) && loss > 50.0)
-                                {
-                                    // send high signal for 5 seconds
-                                    int counter = 10;
-                                    while (counter > 0)
-                                    {
-                                        counter--;
-                                        this.OnNotifyEventHandler(true);
-                                        await Task.Delay(TimeSpan.FromMilliseconds(500));
-                                    }
-                                }
-                                else
-                                {
-                                    this.OnNotifyEventHandler(false);
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            //
-                        }
+                                 var output = await this.mlModel.EvaluateAsync(input);
+                                 var result = output.ClassLabel.GetAsVectorView()[0];
+                                 var loss = output.Loss[0][result] * 100.0f;
+                                 if (string.Equals(result, "stop", StringComparison.OrdinalIgnoreCase) && loss > 50.0)
+                                 {
+                                     // send high signal for 5 seconds
+                                     int counter = 10;
+                                     while (counter > 0)
+                                     {
+                                         counter--;
+                                         this.OnNotifyEventHandler(true);
+                                         await Task.Delay(TimeSpan.FromMilliseconds(500));
+                                     }
+                                 }
+                                 else
+                                 {
+                                     this.OnNotifyEventHandler(false);
+                                 }
+                             }
+                         }
+                         catch (Exception ex)
+                         {
+                             //
+                         }
 
-                        await Task.Delay(TimeSpan.FromMilliseconds(10));
-                    }
-                }, this.streamCancellationTokenSource.Token);
+                         await Task.Delay(TimeSpan.FromMilliseconds(10));
+                     }
+                 }, this.streamCancellationTokenSource.Token);
             }
             catch (Exception ex)
             {

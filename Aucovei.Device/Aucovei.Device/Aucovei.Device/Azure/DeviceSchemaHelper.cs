@@ -80,8 +80,8 @@ namespace Aucovei.Device.Azure
             deviceProps.Add(DevicePropertiesConstants.LPOADING_CAPACITY, "1000kg");
             deviceProps.Add(DevicePropertiesConstants.WHEEL_BASE, "2000 m");
             deviceProps.Add(DevicePropertiesConstants.MAX_OPERATING_TEMP, "120 °c");
-            deviceProps.Add(DevicePropertiesConstants.LATITUDE, 17.579861);
-            deviceProps.Add(DevicePropertiesConstants.LONGITUDE, 78.600438);
+            deviceProps.Add(DevicePropertiesConstants.LATITUDE, 17.442965);
+            deviceProps.Add(DevicePropertiesConstants.LONGITUDE, 78.3575231);
 
             (device as JObject).Add(DeviceModelConstants.DEVICE_PROPERTIES, deviceProps);
         }
