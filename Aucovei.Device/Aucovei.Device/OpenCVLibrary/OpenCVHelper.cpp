@@ -3,7 +3,6 @@
 #include "OpenCVHelper.h"
 #include "MemoryBuffer.h"
 #include <iostream>
-#include <ctime>
 
 using namespace Microsoft::WRL;
 
@@ -15,73 +14,65 @@ using namespace Windows::Foundation;
 
 using namespace cv;
 using namespace std;
-using namespace cv::xfeatures2d;
-
-int THRESHOLD = 7100;
 
 OpenCVHelper::OpenCVHelper()
 {
 }
 
-// computes mean square error between two n-d matrices (same size).
-// lower mse means higher similarity
-static double meanSquareError(const Mat &img1, const Mat &img2) {
-	Mat s1;
-	absdiff(img1, img2, s1);   // |img1 - img2|
-	s1.convertTo(s1, CV_32F);  // cannot make a square on 8 bits
-	s1 = s1.mul(s1);           // |img1 - img2|^2
-	Scalar s = sum(s1);        // sum elements per channel
-	double sse = s.val[0] + s.val[1] + s.val[2];  // sum channels
-	double mse = sse / (double)(img1.channels() * img1.total());
-	return mse;
-}
-
-bool OpenCVHelper::IsStopSign(SoftwareBitmap^ templateImage, SoftwareBitmap^ targetImage)
+void OpenCVHelper::GetLargestRedObjectCrop(SoftwareBitmap^ inputImg, SoftwareBitmap^ output)
 {
-	Mat image, prototypeImg;
-	if (!(TryConvert(templateImage, prototypeImg) && TryConvert(targetImage, image)))
+	Mat input, outputMat;
+	if (!(TryConvert(inputImg, input) && TryConvert(output, outputMat)))
 	{
-		return false;
+		return;
 	}
 
-	if (!image.data || !prototypeImg.data)
+	Mat maskImage = cv::Mat::zeros(input.size(), CV_8UC1);
+	Mat bgr = input;
+
+	// inverting the BGR image
+	Mat bgr_inv = ~bgr;
+
+	// converting to HSV color space
+	Mat hsv_inv;
+	cvtColor(bgr_inv, hsv_inv, COLOR_BGR2HSV);
+
+	// detecting Cyan regions in iverted image which would be reddish regions in the original image
+	Mat mask;
+	//inRange(hsv_inv, Scalar(80, 50, 70), Scalar(100, 255, 255), mask); // Cyan is 90
+	inRange(hsv_inv, Scalar(80, 100, 100), Scalar(100, 255, 255), mask); // Cyan is 90
+	//imshow("Red", mask);
+	//waitKey(0);
+
+	// Find & process the contours
+	vector< vector< cv::Point> > contours;
+	vector <Vec4i> heirarchy;
+	findContours(mask, contours, heirarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+
+	// find the largest squarish contour
+	cv::Rect largestSquareRect = cv::Rect(0, 0, 0, 0);
+	for (int i = 0; i < (int)contours.size(); ++i)
 	{
-		std::cout << " --(!) Error reading images " << std::endl; return false;
-	}
-
-	int width = 200;
-	int height = width * image.rows / image.cols;
-	resize(image, image, cv::Size(width, height));
-
-	std::vector<KeyPoint> keypoints1, keypoints2;
-	Mat descriptors1, descriptors2;
-	int minHessian = 400;
-	Ptr<SURF> detector = SURF::create(minHessian);
-	detector->detectAndCompute(prototypeImg, noArray(), keypoints1, descriptors1);
-	detector->detectAndCompute(image, noArray(), keypoints2, descriptors2);
-	//-- Step 2: Matching descriptor vectors with a FLANN based matcher
-	// Since SURF is a floating-point descriptor NORM_L2 is used
-	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
-	std::vector< std::vector<DMatch> > knn_matches;
-	matcher->knnMatch(descriptors1, descriptors2, knn_matches, 2);
-
-	//-- Filter matches using the Lowe's ratio test
-	const float ratio_thresh = 0.70f;
-	std::vector<DMatch> good_matches;
-	for (size_t i = 0; i < knn_matches.size(); i++)
-	{
-		if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
+		//double area = contourArea(contours[i]);
+		cv::Rect r = boundingRect(contours[i]);
+		float aspect_ratio = r.width / r.height;
+		if (aspect_ratio > 0.5 && aspect_ratio < 1.5)
 		{
-			good_matches.push_back(knn_matches[i][0]);
+			if (largestSquareRect.width * largestSquareRect.height < r.width * r.height)
+				largestSquareRect = r;
 		}
 	}
 
-	float matchpercentage = (good_matches.size() * 100) / (knn_matches.size() + 0.001);
-	if (matchpercentage > 20.0) {
-		return true;
+	Mat cropped;
+	// if found a valid region, extract it from the original image
+	if (largestSquareRect.width > 0 && largestSquareRect.height > 0)
+	{
+		cropped = input(largestSquareRect);
 	}
+	else
+		input.copyTo(cropped);
 
-	return false;
+	cv::resize(cropped, outputMat, cv::Size(output->PixelWidth, output->PixelHeight));
 }
 
 bool OpenCVHelper::TryConvert(SoftwareBitmap^ from, Mat& convertedMat)

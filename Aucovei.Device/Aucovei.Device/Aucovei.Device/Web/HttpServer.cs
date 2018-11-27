@@ -9,7 +9,9 @@ using System.Threading.Tasks;
 using Aucovei.Device.Configuration;
 using Aucovei.Device.Devices;
 using Aucovei.Device.Helper;
+using OpenCVLibrary;
 using Windows.AI.MachineLearning;
+using Windows.Graphics.Imaging;
 using Windows.Media;
 using Windows.Networking.Sockets;
 using Windows.Storage;
@@ -23,6 +25,7 @@ namespace Aucovei.Device.Web
         private readonly StreamSocketListener _listener;
         private RoadSignDetectionMLModel mlModel;
         private CancellationTokenSource streamCancellationTokenSource;
+        private OpenCVHelper openCvHelper;
 
         //Dependency objects
         private Camera _camera;
@@ -46,6 +49,7 @@ namespace Aucovei.Device.Web
             this._listener.Control.NoDelay = false;
             this._listener.Control.QualityOfService = SocketQualityOfService.LowLatency;
             this._listener.BindServiceNameAsync(80.ToString()).GetAwaiter();
+            this.openCvHelper = new OpenCVHelper();
             this.LoadModelAsync().GetAwaiter();
         }
 
@@ -226,6 +230,13 @@ namespace Aucovei.Device.Web
                          {
                              if (this._camera.Bitmap != null)
                              {
+                                 var outputBitmap = new SoftwareBitmap(
+                                     BitmapPixelFormat.Bgra8, 
+                                     100, 
+                                     100, 
+                                     BitmapAlphaMode.Premultiplied);
+                                 this.openCvHelper.GetLargestRedObjectCrop(this._camera.Bitmap, outputBitmap);
+
                                  VideoFrame rawImage = VideoFrame.CreateWithSoftwareBitmap(this._camera.Bitmap);
                                  RoadSignDetectionMLModelInput input = new RoadSignDetectionMLModelInput
                                  {
@@ -234,8 +245,14 @@ namespace Aucovei.Device.Web
 
                                  var output = await this.mlModel.EvaluateAsync(input);
                                  var result = output.ClassLabel.GetAsVectorView()[0];
-                                 var loss = output.Loss[0][result] * 100.0f;
-                                 if (string.Equals(result, "stop", StringComparison.OrdinalIgnoreCase) && loss > 50.0)
+                                 double loss = 0;
+                                 if (output.Loss.Count > 0)
+                                 {
+                                     loss = output.Loss[0][result] * 100.0f;
+                                 }
+
+                                 if (string.Equals(result, "stop", StringComparison.OrdinalIgnoreCase) && 
+                                     loss > 0.0)
                                  {
                                      // send high signal for 5 seconds
                                      int counter = 10;
@@ -257,7 +274,7 @@ namespace Aucovei.Device.Web
                              //
                          }
 
-                         await Task.Delay(TimeSpan.FromMilliseconds(10));
+                         await Task.Delay(TimeSpan.FromMilliseconds(1));
                      }
                  }, this.streamCancellationTokenSource.Token);
             }

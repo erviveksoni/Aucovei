@@ -4,7 +4,7 @@
 #pragma once
 #include <opencv2\core\core.hpp>
 #include <opencv2\imgproc\imgproc.hpp>
-#include <opencv2\xfeatures2d.hpp>
+#include <opencv2\video.hpp>
 
 namespace OpenCVLibrary
 {
@@ -12,12 +12,9 @@ namespace OpenCVLibrary
 	{
 	public:
 		OpenCVHelper();
-
-		// Image processing operators
-		bool IsStopSign(
-			Windows::Graphics::Imaging::SoftwareBitmap^ templateImage,
-			Windows::Graphics::Imaging::SoftwareBitmap^ targetImage);
-
+		void GetLargestRedObjectCrop(
+			Windows::Graphics::Imaging::SoftwareBitmap^ inputImg,
+			Windows::Graphics::Imaging::SoftwareBitmap^ output);
 	private:
 		// used only for the background subtraction operation
 		bool GetPointerToPixelData(Windows::Graphics::Imaging::SoftwareBitmap^ bitmap,

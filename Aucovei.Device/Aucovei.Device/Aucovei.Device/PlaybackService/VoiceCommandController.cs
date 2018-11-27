@@ -34,7 +34,8 @@ namespace Aucovei.Device.Services
         AutoDrive,
         Tilt,
         Pan,
-        Intro
+        Intro,
+        Greet
     }
 
     public struct VoiceCommand
@@ -369,6 +370,10 @@ namespace Aucovei.Device.Services
                 else if (spr.Contains("stop"))
                 {
                     return VoiceCommandType.Stop;
+                }
+                else if (spr.Contains("welcome"))
+                {
+                    return VoiceCommandType.Greet;
                 }
             }
 

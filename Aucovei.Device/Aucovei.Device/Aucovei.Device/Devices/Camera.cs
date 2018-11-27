@@ -15,6 +15,7 @@ using Windows.Media.Capture.Frames;
 using Windows.Storage.Streams;
 using Windows.UI.Core;
 using Aucovei.Device.Configuration;
+using OpenCVLibrary;
 
 namespace Aucovei.Device.Devices
 {
@@ -148,7 +149,7 @@ namespace Aucovei.Device.Devices
                                 BitmapAlphaMode.Premultiplied);
 
                             Bitmap = bitmapBuffer;
-
+              
                             var encoder = imageTask.Result;
                             //encoder.BitmapTransform.Rotation = BitmapRotation.Clockwise270Degrees;
                             encoder.SetSoftwareBitmap(bitmap);

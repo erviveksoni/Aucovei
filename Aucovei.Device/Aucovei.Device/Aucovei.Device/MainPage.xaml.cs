@@ -621,7 +621,15 @@ namespace Aucovei.Device
                         int monthsApart = 12 * (DateTime.UtcNow.Year - make.Year) + DateTime.UtcNow.Month - make.Month;
                         var agemonths = Math.Abs(monthsApart);
 
-                        response = $"Hello! I'am aucovee,a connected car. I love to drive.";
+                        response = $"Hello! I'am aucovee, a connected car.";
+                        this.Speak(response);
+                        this.WriteToCommandTextBlock("Hello...", "👋🏽", 10);
+                        this.WriteToOutputTextBlock("Hello...");
+
+                        break;
+                    case VoiceCommandType.Greet:
+
+                        response = $"Hello! Welcome to geeknights!";
                         this.Speak(response);
                         this.WriteToCommandTextBlock("Hello...", "👋🏽", 10);
                         this.WriteToOutputTextBlock("Hello...");
@@ -631,7 +639,7 @@ namespace Aucovei.Device
                         //response = "Sorry, I didn't get that." + Environment.NewLine + "Try \"Go to room 2011\"";
                         response = "Sorry, I didn't get that." + Environment.NewLine + "Try again!";
                         this.Speak(response);
-                        this.WriteToCommandTextBlock(response, "🤷‍♂️");
+                        this.WriteToCommandTextBlock(response, "🤷‍♂");
                         break;
                 }
             }
