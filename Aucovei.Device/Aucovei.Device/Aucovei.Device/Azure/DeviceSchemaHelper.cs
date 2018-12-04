@@ -129,6 +129,9 @@ namespace Aucovei.Device.Azure
 
             telemetry = CommandSchemaHelper.CreateNewTelemetry("DeviceIp", "DeviceIp", "string");
             CommandSchemaHelper.AddTelemetryToDevice(device, telemetry);
+
+            telemetry = CommandSchemaHelper.CreateNewTelemetry("IsObstacleDetected", "IsObstacleDetected", "bool");
+            CommandSchemaHelper.AddTelemetryToDevice(device, telemetry);
         }
 
         private static void AssignCommands(dynamic device)
